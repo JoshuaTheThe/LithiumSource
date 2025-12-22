@@ -21,7 +21,7 @@
 size_t DrawObject(Mesh3D *Cube, SCENE *Scene);
 int CompareTriangles(const void *a, const void *b);
 double GetTriangleDepth(const TRI3D *tri);
-COLOUR GetCol(double lum);
+COLOUR GetCol(COLOUR col, double lum);
 void DrawTriWire(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b);
 void DrawTri(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b);
 int interpolateX(int y1, int y2, int x1, int x2, int y);

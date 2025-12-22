@@ -29,7 +29,6 @@ SCENE *SceneInit( const char *Title, int X, int Y, int W, int H )
         } else if (!initialised)
         {
                 Init();
-
         }
 
         Scene->Window.Window = SDL_CreateWindow(Title, X, Y, W, H, SDL_WINDOW_SHOWN);
@@ -45,12 +44,15 @@ SCENE *SceneInit( const char *Title, int X, int Y, int W, int H )
         Scene->CurrentColor.b = 255;
         
         Scene->Camera.FOV = 90;
-        Scene->Camera.Aspect = W / H;
-
-        if (!old_init)
-        {
-                InitProjectionMat(Scene);
-        }
+        Scene->Camera.Aspect = H / W;
+        Scene->Camera.Position.X = 0.0;
+        Scene->Camera.Position.Y = 0.0;
+        Scene->Camera.Position.Z = 0.0;
+        Scene->Camera.Rotation.X = 0.0;
+        Scene->Camera.Rotation.Y = 0.0;
+        Scene->Camera.Rotation.Z = 0.0;
+        Scene->Camera.Near = 0.5;
+        Scene->Camera.Far = 1000.0;
         return Scene;
 }
 
@@ -79,10 +81,6 @@ void SceneTick( SCENE **Scene )
                         break;
         }
         }
-
-        (*Scene)->new = SDL_GetTicks();
-        (*Scene)->dt = (float)((*Scene)->new - (*Scene)->old) / 1000.0;
-        (*Scene)->old = (*Scene)->new;
 }
 
 void SceneEnd( SCENE *Scene, bool Final )

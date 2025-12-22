@@ -32,7 +32,7 @@ list_files_recursive() {
             echo "Compiling $file -> $output_file"
             mkdir -p "$(dirname "$output_file")"
 
-            clang -I./src -c "$file" -o "$output_file" -Wall -Wextra -g
+            gcc -I./src -c "$file" -o "$output_file" -Wall -Wextra -O3 -s -fno-ident -fno-asynchronous-unwind-tables
             categorize_object_file "$output_file"
         elif [[ -f "$file" && "$file" == *.s ]]; then
             local base="${file#./src/}"
