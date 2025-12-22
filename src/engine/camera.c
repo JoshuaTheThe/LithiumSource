@@ -425,7 +425,7 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
         Mat4x4 RotMatrixYaw = MakeRotationY(DEG_TO_RAD(cameraYaw));
         Mat4x4 RotMatrixPitch = MakeRotationX(DEG_TO_RAD(cameraPitch));
 
-        Mat4x4 CameraRotation = MulMatMat(&RotMatrixYaw, &RotMatrixPitch);
+        Mat4x4 CameraRotation = MulMatMat(&RotMatrixPitch, &RotMatrixYaw);
 
         Mat4x4 CameraTranslation = MakeTransMat(
             Scene->Camera.Position.X,
@@ -468,8 +468,8 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                         if (triTransformed.p[j].Z < 0)
                                 verticesBehind++;
                 }
-                if (verticesBehind == 3)
-                        continue;
+                //if (verticesBehind == 3)
+                //        continue;
 
                 VEC3 Normal, Line1, Line2;
                 Line1 = SubVec3(&triTransformed.p[1], &triTransformed.p[0]);
@@ -477,8 +477,8 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                 Normal = CrossProdVec3(&Line1, &Line2);
 
                 double normalLength = LenVec3(&Normal);
-                if (normalLength < Scene->Camera.Near)
-                        continue;
+                //if (normalLength < Scene->Camera.Near)
+                //        continue;
 
                 NormaliseVec3(&Normal);
 
@@ -514,8 +514,8 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                         verticesVisible++;
                 }
 
-                if (verticesVisible == 0)
-                        continue;
+                //if (verticesVisible == 0)
+                //        continue;
 
                 memcpy(&TrisToDraw[trisDrawn], &triProjected, sizeof(TRI3D));
                 trisDrawn++;

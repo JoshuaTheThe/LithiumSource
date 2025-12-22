@@ -18,5 +18,6 @@
 bool LoadMeshFromFile(const char *fileName, Mesh3D *mesh);
 void DelMesh(Mesh3D *mesh);
 Mesh3D *InitMesh(size_t triCount);
+bool PlayerCollides(SCENE *Scene, TRI3D *Tri);
 
 #endif

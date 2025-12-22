@@ -18,6 +18,54 @@ void DelMesh(Mesh3D *mesh)
         free(mesh);
 }
 
+bool PlayerCollides(SCENE *Scene, TRI3D *Tri)
+{
+        if (!Scene || !Tri)
+                return false;
+        BOUNDS player_bounds = Scene->Camera.Bounds;
+        player_bounds.Min.X += Scene->Camera.Position.X;
+        player_bounds.Min.Y += Scene->Camera.Position.Y;
+        player_bounds.Min.Z += Scene->Camera.Position.Z;
+        player_bounds.Max.X += Scene->Camera.Position.X;
+        player_bounds.Max.Y += Scene->Camera.Position.Y;
+        player_bounds.Max.Z += Scene->Camera.Position.Z;
+        BOUNDS tri_bounds;
+
+        tri_bounds.Min.X = Tri->p[0].X;
+        tri_bounds.Min.Y = Tri->p[0].Y;
+        tri_bounds.Min.Z = Tri->p[0].Z;
+        tri_bounds.Max.X = Tri->p[0].X;
+        tri_bounds.Max.Y = Tri->p[0].Y;
+        tri_bounds.Max.Z = Tri->p[0].Z;
+
+        for (int i = 1; i < 3; i++)
+        {
+                if (Tri->p[i].X < tri_bounds.Min.X)
+                        tri_bounds.Min.X = Tri->p[i].X;
+                if (Tri->p[i].Y < tri_bounds.Min.Y)
+                        tri_bounds.Min.Y = Tri->p[i].Y;
+                if (Tri->p[i].Z < tri_bounds.Min.Z)
+                        tri_bounds.Min.Z = Tri->p[i].Z;
+                if (Tri->p[i].X > tri_bounds.Max.X)
+                        tri_bounds.Max.X = Tri->p[i].X;
+                if (Tri->p[i].Y > tri_bounds.Max.Y)
+                        tri_bounds.Max.Y = Tri->p[i].Y;
+                if (Tri->p[i].Z > tri_bounds.Max.Z)
+                        tri_bounds.Max.Z = Tri->p[i].Z;
+        }
+
+        bool x_overlap = (player_bounds.Max.X >= tri_bounds.Min.X) &&
+                         (player_bounds.Min.X <= tri_bounds.Max.X);
+
+        bool y_overlap = (player_bounds.Max.Y >= tri_bounds.Min.Y) &&
+                         (player_bounds.Min.Y <= tri_bounds.Max.Y);
+
+        bool z_overlap = (player_bounds.Max.Z >= tri_bounds.Min.Z) &&
+                         (player_bounds.Min.Z <= tri_bounds.Max.Z);
+
+        return (x_overlap && y_overlap && z_overlap);
+}
+
 bool LoadMeshFromFile(const char *fileName, Mesh3D *mesh)
 {
         FILE *fp = fopen(fileName, "r");

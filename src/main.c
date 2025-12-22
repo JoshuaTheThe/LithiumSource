@@ -10,6 +10,8 @@
 #include <engine/scene.h>
 #include <engine/mesh.h>
 
+const double TERMINAL_VELOCITY = 100.0;
+
 int main(int Count, char **Arguments)
 {
         const int width = 1024;
@@ -21,13 +23,19 @@ int main(int Count, char **Arguments)
         Scene->Renderer.RendererHeight /= scale;
         Scene->Renderer.RendererWidth /= scale;
         Mesh3D *Mesh = InitMesh(0);
-        LoadMeshFromFile("c0a0.obj", Mesh);
-        Mesh->ROTX = -90;
+        LoadMeshFromFile("plane.obj", Mesh);
         Mesh->origin = (VEC3){0, 0, 0};
-        Mesh->Scale.X = 1.0;
-        Mesh->Scale.Y = 1.0;
-        Mesh->Scale.Z = 1.0;
+        Mesh->Scale.X = 100.0;
+        Mesh->Scale.Y = 100.0;
+        Mesh->Scale.Z = 100.0;
+
+        Scene->Camera.Bounds.Max = (VEC3){.X= 0.5, .Y= 2, .Z= 0.5};
+        Scene->Camera.Bounds.Min = (VEC3){.X=-0.5, .Y=-2, .Z=-0.5};
+
+        Scene->Camera.Position.Y = 10.0;
         
+        bool collided = false;
+
         while (Scene)
         {
                 SceneTick(&Scene);
@@ -37,23 +45,23 @@ int main(int Count, char **Arguments)
                 
                 if (Scene->Keymap['w'])
                 {
-                        Scene->Camera.Position.X += sin(-cameraYawRad) * Scene->dt;
-                        Scene->Camera.Position.Z += cos(-cameraYawRad) * Scene->dt;
+                        Scene->Camera.Velocity.X += sin(-cameraYawRad);
+                        Scene->Camera.Velocity.Z += cos(-cameraYawRad);
                 }
                 if (Scene->Keymap['s'])
                 {
-                        Scene->Camera.Position.X -= sin(-cameraYawRad) * Scene->dt;
-                        Scene->Camera.Position.Z -= cos(-cameraYawRad) * Scene->dt;
+                        Scene->Camera.Velocity.X -= sin(-cameraYawRad);
+                        Scene->Camera.Velocity.Z -= cos(-cameraYawRad);
                 }
                 if (Scene->Keymap['a'])
                 {
-                        Scene->Camera.Position.X -= sin(-cameraYawRad + DEG_TO_RAD(90)) * Scene->dt;
-                        Scene->Camera.Position.Z -= cos(-cameraYawRad + DEG_TO_RAD(90)) * Scene->dt;
+                        Scene->Camera.Velocity.X -= sin(-cameraYawRad + DEG_TO_RAD(90));
+                        Scene->Camera.Velocity.Z -= cos(-cameraYawRad + DEG_TO_RAD(90));
                 }
                 if (Scene->Keymap['d'])
                 {
-                        Scene->Camera.Position.X += sin(-cameraYawRad + DEG_TO_RAD(90)) * Scene->dt;
-                        Scene->Camera.Position.Z += cos(-cameraYawRad + DEG_TO_RAD(90)) * Scene->dt;
+                        Scene->Camera.Velocity.X += sin(-cameraYawRad + DEG_TO_RAD(90));
+                        Scene->Camera.Velocity.Z += cos(-cameraYawRad + DEG_TO_RAD(90));
                 }
                 if (Scene->Keymap['z'])
                 {
@@ -63,18 +71,53 @@ int main(int Count, char **Arguments)
                 {
                         Scene->Camera.Rotation.Y -= 5*(double)Scene->dt;
                 }
+                if (Scene->Keymap['r'])
+                {
+                        Scene->Camera.Rotation.X -= 5*(double)Scene->dt;
+                }
+                if (Scene->Keymap['f'])
+                {
+                        Scene->Camera.Rotation.X += 5*(double)Scene->dt;
+                }
                 if (Scene->Keymap['q'])
                 {
-                        Scene->Camera.Position.Y -= (double)Scene->dt;
+                        Scene->Camera.Velocity.Y -= 1.0;
                 }
                 if (Scene->Keymap['e'])
                 {
-                        Scene->Camera.Position.Y += (double)Scene->dt;
+                        Scene->Camera.Velocity.Y += 1.0;
                 }
+
+                /* Physics */
+                Scene->Camera.Velocity.X *= 0.9;
+                Scene->Camera.Velocity.Y *= 0.9;
+                Scene->Camera.Velocity.Z *= 0.9;
+//
+                //if (fabs(Scene->Camera.Velocity.Y) > TERMINAL_VELOCITY)
+                //{
+                //        if (Scene->Camera.Velocity.Y < 0)
+                //                Scene->Camera.Velocity.Y = -TERMINAL_VELOCITY;
+                //        else
+                //                Scene->Camera.Velocity.Y = TERMINAL_VELOCITY;
+                //}
+//
+                //collided = false;
+                Scene->Camera.Position.X += Scene->Camera.Velocity.X * Scene->dt;
+                Scene->Camera.Position.Y += Scene->Camera.Velocity.Y * Scene->dt;
+                Scene->Camera.Position.Z += Scene->Camera.Velocity.Z * Scene->dt;
+//
+                //while (PlayerCollides(Scene, Mesh->tris))
+                //{
+                //        Scene->Camera.Position.Y += 0.01;
+                //        Scene->Camera.Velocity.Y = 0;
+                //        collided = true;
+                //}
+
                 SDL_SetRenderDrawColor(Scene->Renderer.Renderer, 0, 0, 0, 255);
                 SDL_RenderClear(Scene->Renderer.Renderer);
                 DrawObject(Mesh, Scene);
                 SDL_RenderPresent(Scene->Renderer.Renderer);
+
                 Scene->new = SDL_GetTicks();
                 Scene->dt = (float)(Scene->new - Scene->old) / 100.0;
                 Scene->old = Scene->new;

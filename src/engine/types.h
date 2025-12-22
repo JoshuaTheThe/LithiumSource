@@ -47,9 +47,16 @@ typedef struct
 
 typedef struct
 {
+        VEC3 Min, Max;
+} BOUNDS;
+
+typedef struct
+{
         VEC3 Position;
         VEC3 Rotation;
+        VEC3 Velocity;
         double FOV, Aspect, Near, Far;
+        BOUNDS Bounds;
 } CAMERA;
 
 typedef struct
