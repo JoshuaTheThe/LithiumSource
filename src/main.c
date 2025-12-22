@@ -21,12 +21,12 @@ int main(int Count, char **Arguments)
         Scene->Renderer.RendererHeight /= scale;
         Scene->Renderer.RendererWidth /= scale;
         Mesh3D *Mesh = InitMesh(0);
-        LoadMeshFromFile("mario.obj", Mesh);
-        //Mesh->ROTX = -90;
-        Mesh->origin = (VEC3){0, -20, 0};
-        Mesh->Scale.X = 10.0;
-        Mesh->Scale.Y = 10.0;
-        Mesh->Scale.Z = 10.0;
+        LoadMeshFromFile("c0a0.obj", Mesh);
+        Mesh->ROTX = -90;
+        Mesh->origin = (VEC3){0, 0, 0};
+        Mesh->Scale.X = 1.0;
+        Mesh->Scale.Y = 1.0;
+        Mesh->Scale.Z = 1.0;
         
         while (Scene)
         {

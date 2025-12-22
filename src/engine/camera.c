@@ -287,98 +287,47 @@ static int interpolateX(int y1, int y2, int x1, int x2, int y)
 
 static void DrawTri(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b)
 {
-        int minY = y0, maxY = y0;
-        if (y1 < minY)
-                minY = y1;
-        if (y2 < minY)
-                minY = y2;
-        if (y1 > maxY)
-                maxY = y1;
-        if (y2 > maxY)
-                maxY = y2;
-
-        if (minY >= Scene->Renderer.RendererHeight || maxY < 0)
-                return;
-
-        int startY = minY < 0 ? 0 : minY;
-        int endY = maxY >= Scene->Renderer.RendererHeight ? Scene->Renderer.RendererHeight - 1 : maxY;
-
         sortVertices(&y0, &y1, &y2, &x0, &x1, &x2);
         SDL_SetRenderDrawColor(Scene->Renderer.Renderer, r, g, b, 255);
-
-        float dxdy_left1 = (y1 - y0 != 0) ? (float)(x1 - x0) / (y1 - y0) : 0;
-        float dxdy_right1 = (y2 - y0 != 0) ? (float)(x2 - x0) / (y2 - y0) : 0;
-
-        float dxdy_left2 = (y2 - y1 != 0) ? (float)(x2 - x1) / (y2 - y1) : 0;
-
-        float curXLeft, curXRight;
-
-        if (y0 != y1)
-        {
-                curXLeft = x0;
-                curXRight = x0;
-
-                int yStart = (y0 < 0) ? 0 : y0;
-                int yEnd = (y1 > endY) ? endY : y1;
-
-                for (int y = yStart; y <= yEnd; ++y)
-                {
-                        int xLeft = (int)curXLeft;
-                        int xRight = (int)curXRight;
-
-                        if (xLeft > xRight)
-                        {
-                                SDL_SWAP(&xLeft, &xRight);
-                        }
-
-                        if (xLeft < 0)
-                                xLeft = 0;
-                        if (xRight >= Scene->Renderer.RendererWidth)
-                                xRight = Scene->Renderer.RendererWidth - 1;
-
-                        if (xLeft <= xRight)
-                        {
-                                SDL_RenderDrawLine(Scene->Renderer.Renderer, xLeft, y, xRight, y);
-                        }
-
-                        if (y < y1)
-                        {
-                                curXLeft += dxdy_left1;
-                                curXRight += dxdy_right1;
-                        }
-                }
-        }
-
-        if (y1 != y2)
-        {
-                curXLeft = x1;
-
-                int yStart = (y1 < 0) ? 0 : y1;
-                int yEnd = (y2 > endY) ? endY : y2;
-
-                for (int y = yStart; y <= yEnd; ++y)
-                {
-                        int xLeft = (int)curXLeft;
-                        int xRight = (int)(x0 + (y - y0) * dxdy_right1);
-
-                        if (xLeft > xRight)
-                        {
-                                SDL_SWAP(&xLeft, &xRight);
-                        }
-
-                        if (xLeft < 0)
-                                xLeft = 0;
-                        if (xRight >= Scene->Renderer.RendererWidth)
-                                xRight = Scene->Renderer.RendererWidth - 1;
-
-                        if (xLeft <= xRight)
-                        {
-                                SDL_RenderDrawLine(Scene->Renderer.Renderer, xLeft, y, xRight, y);
-                        }
-
-                        curXLeft += dxdy_left2;
-                }
-        }
+        SDL_Vertex Verts[] = {
+                { .position={ x0, y0 }, .color.r=r, .color.g=g, .color.b=b, .color.a=255, .tex_coord={0} },
+                { .position={ x1, y1 }, .color.r=r, .color.g=g, .color.b=b, .color.a=255, .tex_coord={0} },
+                { .position={ x2, y2 }, .color.r=r, .color.g=g, .color.b=b, .color.a=255, .tex_coord={0} },
+        };
+        SDL_RenderGeometry(Scene->Renderer.Renderer, NULL, Verts, sizeof(Verts), NULL, 0);
+        //for (int y = y0; y <= y2; ++y)
+        //{
+        //        int xLeft, xRight;
+//
+        //        if (y < y1)
+        //        {
+        //                xLeft = interpolateX(y0, y2, x0, x2, y);
+        //                xRight = interpolateX(y0, y1, x0, x1, y);
+        //        }
+        //        else
+        //        {
+        //                xLeft = interpolateX(y1, y2, x1, x2, y);
+        //                xRight = interpolateX(y0, y2, x0, x2, y);
+        //        }
+//
+        //        if (xLeft > xRight)
+        //        {
+        //                SDL_SWAP(&xLeft, &xRight);
+        //        }
+//
+        //        if (xLeft <= xRight)
+        //        {
+        //                if (xLeft < 0)
+        //                        xLeft = 0;
+        //                if (xRight >= Scene->Renderer.RendererWidth)
+        //                        xRight = Scene->Renderer.RendererWidth - 1;
+//
+        //                if (xLeft <= xRight)
+        //                {
+        //                        SDL_RenderDrawLine(Scene->Renderer.Renderer, xLeft, y, xRight, y);
+        //                }
+        //        }
+        //}
 }
 
 static void DrawTriWire(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b)
@@ -516,10 +465,10 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                 int verticesBehind = 0;
                 for (int j = 0; j < 3; ++j)
                 {
-                        if (triTransformed.p[j].Z < Scene->Camera.Near)
+                        if (triTransformed.p[j].Z < 0)
                                 verticesBehind++;
                 }
-                if (verticesBehind > 0)
+                if (verticesBehind == 3)
                         continue;
 
                 VEC3 Normal, Line1, Line2;
