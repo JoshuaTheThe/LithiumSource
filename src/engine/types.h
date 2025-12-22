@@ -71,7 +71,7 @@ typedef struct SCENE
         WINDOW_SDL Window;
         COLOUR CurrentColor;
         char padd[4];
-        size_t start, end;
+        size_t new, old;
         float dt;
 } SCENE;
 

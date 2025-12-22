@@ -19,18 +19,17 @@ int main( int Count, char **Arguments )
         Mesh->origin = (VEC3){0, 0, 5};
         while(Scene)
         {
-                Scene->start = SDL_GetTicks();
                 SDL_SetRenderDrawColor(Scene->Renderer.Renderer, 0, 0, 0, 255);
                 SDL_RenderClear(Scene->Renderer.Renderer);
                 DrawObject(Mesh, Scene);
                 SDL_RenderPresent(Scene->Renderer.Renderer);
                 if (Scene->Keymap['w'])
                 {
-                        Scene->Camera.Rotation.Y += 0.05 * (double)Scene->dt;
+                        Scene->Camera.Rotation.X += 100.0 * (double)Scene->dt;
                 }
                 if (Scene->Keymap['s'])
                 {
-                        Scene->Camera.Rotation.Y -= 0.05 * (double)Scene->dt;
+                        Scene->Camera.Rotation.X -= 100.0 * (double)Scene->dt;
                 }
                 SceneTick(&Scene);
         }

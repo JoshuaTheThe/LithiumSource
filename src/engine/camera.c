@@ -145,9 +145,9 @@ Mat4x4 MakeTransMat(double x, double y, double z)
         mat.m[1][1] = 1.0;
         mat.m[2][2] = 1.0;
         mat.m[3][3] = 1.0;
-        mat.m[3][0] = x;
-        mat.m[3][1] = y;
-        mat.m[3][2] = z;
+        mat.m[0][3] = x;
+        mat.m[1][3] = y;
+        mat.m[2][3] = z;
         return mat;
 }
 
@@ -391,10 +391,8 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
 
         Mat4x4 RotMatrixX = MakeRotationX(DEG_TO_RAD(Cube->ROTX)),
                RotMatrixY = MakeRotationY(DEG_TO_RAD(Cube->ROTY)),
-               RotMatrixZ = MakeRotationZ(DEG_TO_RAD(Cube->ROTZ)),
-               RotMatrixXCam = MakeRotationX(DEG_TO_RAD(Scene->Camera.Rotation.X)),
-               RotMatrixYCam = MakeRotationY(DEG_TO_RAD(Scene->Camera.Rotation.Y)),
-               RotMatrixZCam = MakeRotationZ(DEG_TO_RAD(Scene->Camera.Rotation.Z));
+               RotMatrixZ = MakeRotationZ(DEG_TO_RAD(Cube->ROTZ));
+
         elapsedTime0 = elapsedTime1;
         elapsedTime1 = SDL_GetTicks();
 
@@ -413,72 +411,75 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                 return elapsedTime1;
         }
 
-        RotMatrixZ = MulMatMat(&RotMatrixZ, &RotMatrixZCam);
-        RotMatrixY = MulMatMat(&RotMatrixY, &RotMatrixYCam);
-        RotMatrixX = MulMatMat(&RotMatrixX, &RotMatrixXCam);
+        Mat4x4 ObjectRotation = MulMatMat(&RotMatrixZ, &RotMatrixY);
+        ObjectRotation = MulMatMat(&ObjectRotation, &RotMatrixX);
+
+        Mat4x4 CameraRotX = MakeRotationX(-DEG_TO_RAD(Scene->Camera.Rotation.X));
+        Mat4x4 CameraRotY = MakeRotationY(-DEG_TO_RAD(Scene->Camera.Rotation.Y));
+        Mat4x4 CameraRotZ = MakeRotationZ(-DEG_TO_RAD(Scene->Camera.Rotation.Z));
+
+        Mat4x4 CameraRotation = MulMatMat(&CameraRotY, &CameraRotX);
+        CameraRotation = MulMatMat(&CameraRotation, &CameraRotZ);
+
+        Mat4x4 CameraTranslation = MakeTransMat(
+            -Scene->Camera.Position.X,
+            -Scene->Camera.Position.Y,
+            -Scene->Camera.Position.Z);
+
+        Mat4x4 ViewMatrix = MulMatMat(&CameraRotation, &CameraTranslation);
 
         for (size_t i = 0; i < Cube->tri_count; ++i)
         {
-                TRI3D tri, triProjected, triTranslated, triRotatedZ, triRotatedZY, triRotatedZX;
+                TRI3D tri, triProjected, triWorld, triView;
 
                 tri = Cube->tris[i];
 
-                MulMatVec(&tri.p[0], &triRotatedZ.p[0], &RotMatrixZ);
-                MulMatVec(&tri.p[1], &triRotatedZ.p[1], &RotMatrixZ);
-                MulMatVec(&tri.p[2], &triRotatedZ.p[2], &RotMatrixZ);
+                MulMatVec(&tri.p[0], &triWorld.p[0], &ObjectRotation);
+                MulMatVec(&tri.p[1], &triWorld.p[1], &ObjectRotation);
+                MulMatVec(&tri.p[2], &triWorld.p[2], &ObjectRotation);
 
-                MulMatVec(&triRotatedZ.p[0], &triRotatedZY.p[0], &RotMatrixY);
-                MulMatVec(&triRotatedZ.p[1], &triRotatedZY.p[1], &RotMatrixY);
-                MulMatVec(&triRotatedZ.p[2], &triRotatedZY.p[2], &RotMatrixY);
-
-                MulMatVec(&triRotatedZY.p[0], &triRotatedZX.p[0], &RotMatrixX);
-                MulMatVec(&triRotatedZY.p[1], &triRotatedZX.p[1], &RotMatrixX);
-                MulMatVec(&triRotatedZY.p[2], &triRotatedZX.p[2], &RotMatrixX);
-
-                triTranslated = triRotatedZX;
-                for (int i = 0; i < 3; ++i)
+                for (int j = 0; j < 3; ++j)
                 {
-                        triTranslated.p[i].X = triRotatedZX.p[i].X + Cube->origin.X + Scene->Camera.Position.X;
-                        triTranslated.p[i].Y = triRotatedZX.p[i].Y + Cube->origin.Y + Scene->Camera.Position.Y;
-                        triTranslated.p[i].Z = triRotatedZX.p[i].Z + Cube->origin.Z + Scene->Camera.Position.Z;
+                        triWorld.p[j].X += Cube->origin.X;
+                        triWorld.p[j].Y += Cube->origin.Y;
+                        triWorld.p[j].Z += Cube->origin.Z;
                 }
+
+                MulMatVec(&triWorld.p[0], &triView.p[0], &ViewMatrix);
+                MulMatVec(&triWorld.p[1], &triView.p[1], &ViewMatrix);
+                MulMatVec(&triWorld.p[2], &triView.p[2], &ViewMatrix);
 
                 VEC3 Normal, Line, Line2;
 
-                Line = SubVec3(&triTranslated.p[1], &triTranslated.p[0]);
-                Line2 = SubVec3(&triTranslated.p[2], &triTranslated.p[0]);
+                Line = SubVec3(&triView.p[1], &triView.p[0]);
+                Line2 = SubVec3(&triView.p[2], &triView.p[0]);
 
                 Normal = CrossProdVec3(&Line, &Line2);
                 NormaliseVec3(&Normal);
 
-                if (Normal.X * (triTranslated.p[0].X - Scene->Camera.Position.X) +
-                        Normal.Y * (triTranslated.p[0].Y - Scene->Camera.Position.Y) +
-                        Normal.Z * (triTranslated.p[0].Z - Scene->Camera.Position.Z) <
-                    0.0)
+                if (Normal.Z < 0.0)
                 {
                         VEC3 LightDir = {0.0, 0.4, -1.0};
                         NormaliseVec3(&LightDir);
 
-                        double dp = DotVec3(&Normal, &LightDir);
+                        Line = SubVec3(&triWorld.p[1], &triWorld.p[0]);
+                        Line2 = SubVec3(&triWorld.p[2], &triWorld.p[0]);
+                        VEC3 WorldNormal = CrossProdVec3(&Line, &Line2);
+                        NormaliseVec3(&WorldNormal);
+
+                        double dp = DotVec3(&WorldNormal, &LightDir);
                         COLOUR col = GetCol(dp / 10);
                         triProjected.col = col;
 
-                        MulMatVec(&triTranslated.p[0], &triProjected.p[0], &ProjectionMatrix);
-                        MulMatVec(&triTranslated.p[1], &triProjected.p[1], &ProjectionMatrix);
-                        MulMatVec(&triTranslated.p[2], &triProjected.p[2], &ProjectionMatrix);
+                        MulMatVec(&triView.p[0], &triProjected.p[0], &ProjectionMatrix);
+                        MulMatVec(&triView.p[1], &triProjected.p[1], &ProjectionMatrix);
+                        MulMatVec(&triView.p[2], &triProjected.p[2], &ProjectionMatrix);
 
-                        triProjected.p[0].X += 1.0;
-                        triProjected.p[0].X *= 0.5 * (double)Scene->Renderer.RendererWidth;
-                        triProjected.p[0].Y += 1.0;
-                        triProjected.p[0].Y *= 0.5 * (double)Scene->Renderer.RendererHeight;
-                        triProjected.p[1].X += 1.0;
-                        triProjected.p[1].X *= 0.5 * (double)Scene->Renderer.RendererWidth;
-                        triProjected.p[1].Y += 1.0;
-                        triProjected.p[1].Y *= 0.5 * (double)Scene->Renderer.RendererHeight;
-                        triProjected.p[2].X += 1.0;
-                        triProjected.p[2].X *= 0.5 * (double)Scene->Renderer.RendererWidth;
-                        triProjected.p[2].Y += 1.0;
-                        triProjected.p[2].Y *= 0.5 * (double)Scene->Renderer.RendererHeight;
+                        for (int j = 0; j < 3; ++j)
+                        {
+                                triProjected.p[j].X = (triProjected.p[j].X + 1.0) * 0.5 * Scene->Renderer.RendererWidth;
+                                triProjected.p[j].Y = (triProjected.p[j].Y + 1.0) * 0.5 * Scene->Renderer.RendererHeight;
+                        }
 
                         memcpy(&TrisToDraw[i], &triProjected, sizeof(TRI3D));
                 }
@@ -489,6 +490,13 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
         for (size_t i = 0; i < Cube->tri_count; ++i)
         {
                 TRI3D *triToDraw = &TrisToDraw[i];
+
+                if (triToDraw->p[0].X == 0 && triToDraw->p[0].Y == 0 &&
+                    triToDraw->p[1].X == 0 && triToDraw->p[1].Y == 0 &&
+                    triToDraw->p[2].X == 0 && triToDraw->p[2].Y == 0)
+                {
+                        continue;
+                }
 
                 if (WIRE_FRAME)
                 {

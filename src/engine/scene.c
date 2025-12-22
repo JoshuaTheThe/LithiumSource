@@ -66,6 +66,7 @@ void SceneTick( SCENE **Scene )
                         break;
                 case SDL_KEYDOWN:
                         (*Scene)->Keymap[e.key.keysym.sym] = true;
+                        printf("%c", (*Scene)->Keymap[e.key.keysym.sym]);
                         break;
                 case SDL_KEYUP:
                         (*Scene)->Keymap[e.key.keysym.sym] = false;
@@ -74,11 +75,14 @@ void SceneTick( SCENE **Scene )
                         SceneEnd(*Scene, false);
                         (*Scene) = NULL;
                         return;
+                default:
+                        break;
         }
         }
 
-        (*Scene)->end = SDL_GetTicks();
-        (*Scene)->dt = 1.0f / (float)((*Scene)->end - (*Scene)->start);
+        (*Scene)->new = SDL_GetTicks();
+        (*Scene)->dt = (float)((*Scene)->new - (*Scene)->old) / 1000.0;
+        (*Scene)->old = (*Scene)->new;
 }
 
 void SceneEnd( SCENE *Scene, bool Final )
