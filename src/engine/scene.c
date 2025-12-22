@@ -1,7 +1,7 @@
-#include<engine/Scene.h>
-#include<engine/draw.h>
-#include<engine/camera.h>
-#include<todo.h>
+#include <engine/Scene.h>
+#include <engine/draw.h>
+#include <engine/camera.h>
+#include <todo.h>
 
 static bool initialised = false;
 
@@ -17,7 +17,7 @@ static void Init(void)
         initialised = true;
 }
 
-SCENE *SceneInit( const char *Title, int X, int Y, int W, int H )
+SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
 {
         SCENE *Scene = calloc(1, sizeof(*Scene));
         bool old_init = initialised;
@@ -26,7 +26,8 @@ SCENE *SceneInit( const char *Title, int X, int Y, int W, int H )
                 if (Scene)
                         free(Scene);
                 TODO();
-        } else if (!initialised)
+        }
+        else if (!initialised)
         {
                 Init();
         }
@@ -38,11 +39,11 @@ SCENE *SceneInit( const char *Title, int X, int Y, int W, int H )
         Scene->Renderer.Renderer = SDL_CreateRenderer(Scene->Window.Window, -1, SDL_RENDERER_SOFTWARE);
         Scene->Renderer.RendererWidth = W;
         Scene->Renderer.RendererHeight = H;
-        
+
         Scene->CurrentColor.r = 255;
         Scene->CurrentColor.g = 255;
         Scene->CurrentColor.b = 255;
-        
+
         Scene->Camera.FOV = 90;
         Scene->Camera.Aspect = H / W;
         Scene->Camera.Position.X = 0.0;
@@ -51,19 +52,20 @@ SCENE *SceneInit( const char *Title, int X, int Y, int W, int H )
         Scene->Camera.Rotation.X = 0.0;
         Scene->Camera.Rotation.Y = 0.0;
         Scene->Camera.Rotation.Z = 0.0;
-        Scene->Camera.Near = 0.5;
+        Scene->Camera.Near = 0.01;
         Scene->Camera.Far = 1000.0;
         return Scene;
 }
 
-void SceneTick( SCENE **Scene )
+void SceneTick(SCENE **Scene)
 {
         SDL_Event e;
-        if (!Scene || !(*Scene)) return;
+        if (!Scene || !(*Scene))
+                return;
         while (SDL_PollEvent(&e))
         {
-        switch (e.type)
-        {
+                switch (e.type)
+                {
                 case SDL_MOUSEMOTION:
                         break;
                 case SDL_KEYDOWN:
@@ -79,11 +81,11 @@ void SceneTick( SCENE **Scene )
                         return;
                 default:
                         break;
-        }
+                }
         }
 }
 
-void SceneEnd( SCENE *Scene, bool Final )
+void SceneEnd(SCENE *Scene, bool Final)
 {
         if (Scene)
         {

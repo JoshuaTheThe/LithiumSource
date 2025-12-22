@@ -270,6 +270,63 @@ bool LoadMeshFromFile(const char *fileName, Mesh3D *mesh)
         return true;
 }
 
+Mat4x4 TransposeMat(const Mat4x4 *mat)
+{
+        Mat4x4 result;
+
+        for (int i = 0; i < 4; i++)
+        {
+                for (int j = 0; j < 4; j++)
+                {
+                        result.m[i][j] = mat->m[j][i];
+                }
+        }
+
+        return result;
+}
+
+Mat4x4 InvertViewMatrix(const Mat4x4 *mat)
+{
+        // For a view matrix which is a rotation + translation matrix:
+        // R is 3x3 rotation, T is translation
+        // View = [R  T]
+        //        [0  1]
+        // Inverse = [R^-1  -R^-1 * T]
+        //           [0      1       ]
+
+        Mat4x4 inv;
+
+        // Transpose the 3x3 rotation part (since R^-1 = R^T for rotation matrices)
+        inv.m[0][0] = mat->m[0][0];
+        inv.m[0][1] = mat->m[1][0];
+        inv.m[0][2] = mat->m[2][0];
+        inv.m[0][3] = 0.0;
+        inv.m[1][0] = mat->m[0][1];
+        inv.m[1][1] = mat->m[1][1];
+        inv.m[1][2] = mat->m[2][1];
+        inv.m[1][3] = 0.0;
+        inv.m[2][0] = mat->m[0][2];
+        inv.m[2][1] = mat->m[1][2];
+        inv.m[2][2] = mat->m[2][2];
+        inv.m[2][3] = 0.0;
+        inv.m[3][0] = 0.0;
+        inv.m[3][1] = 0.0;
+        inv.m[3][2] = 0.0;
+        inv.m[3][3] = 1.0;
+
+        // Extract translation
+        double tx = mat->m[3][0];
+        double ty = mat->m[3][1];
+        double tz = mat->m[3][2];
+
+        // Calculate -R^T * T
+        inv.m[3][0] = -(inv.m[0][0] * tx + inv.m[1][0] * ty + inv.m[2][0] * tz);
+        inv.m[3][1] = -(inv.m[0][1] * tx + inv.m[1][1] * ty + inv.m[2][1] * tz);
+        inv.m[3][2] = -(inv.m[0][2] * tx + inv.m[1][2] * ty + inv.m[2][2] * tz);
+
+        return inv;
+}
+
 void InitProjectionMat(SCENE *Scene)
 {
         double fAspectRatio = (double)Scene->Renderer.RendererHeight / (double)Scene->Renderer.RendererWidth;
@@ -337,8 +394,11 @@ void DrawTri(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r
 
                 for (int x = xLeft; x <= xRight; ++x)
                 {
-                        SDL_SetRenderDrawColor(Scene->Renderer.Renderer, r, g, b, 255);
-                        SDL_RenderDrawPoint(Scene->Renderer.Renderer, x, y);
+                        if (y < Scene->Renderer.RendererHeight && x < Scene->Renderer.RendererWidth)
+                        {
+                                SDL_SetRenderDrawColor(Scene->Renderer.Renderer, r, g, b, 255);
+                                SDL_RenderDrawPoint(Scene->Renderer.Renderer, x, y);
+                        }
                 }
         }
 }
@@ -397,12 +457,10 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
         static size_t elapsedTime1 = 0;
         static size_t elapsedTime0 = 0;
 
-        Mat4x4 RotMatrixX = MakeRotationX(DEG_TO_RAD(Cube->ROTX)),
-               RotMatrixY = MakeRotationY(DEG_TO_RAD(Cube->ROTY)),
-               RotMatrixZ = MakeRotationZ(DEG_TO_RAD(Cube->ROTZ)),
-               RotMatrixXCam = MakeRotationX(DEG_TO_RAD(Scene->Camera.Rotation.X)),
-               RotMatrixYCam = MakeRotationY(DEG_TO_RAD(Scene->Camera.Rotation.Y)),
-               RotMatrixZCam = MakeRotationZ(DEG_TO_RAD(Scene->Camera.Rotation.Z));
+        Mat4x4 RotMatrixX = MakeRotationX(DEG_TO_RAD(Cube->ROTX));
+        Mat4x4 RotMatrixY = MakeRotationY(DEG_TO_RAD(Cube->ROTY));
+        Mat4x4 RotMatrixZ = MakeRotationZ(DEG_TO_RAD(Cube->ROTZ));
+
         elapsedTime0 = elapsedTime1;
         elapsedTime1 = SDL_GetTicks();
 
@@ -412,7 +470,44 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                 elapsedTime = 0.0;
         }
 
-        Cube->ROTY += 50.0 * (elapsedTime * 1);
+        (void)elapsedTime;
+
+        Mat4x4 ObjectRotation = MulMatMat(&RotMatrixY, &RotMatrixX);
+        ObjectRotation = MulMatMat(&ObjectRotation, &RotMatrixZ);
+        Mat4x4 ObjectTranslation = MakeTransMat(
+            Cube->origin.X,
+            Cube->origin.Y,
+            Cube->origin.Z);
+        Mat4x4 WorldMatrix = MulMatMat(&ObjectRotation, &ObjectTranslation);
+
+        float cameraYaw = Scene->Camera.Rotation.Y;
+        float cameraPitch = Scene->Camera.Rotation.X;
+
+        if (cameraPitch > 89.0f)
+                cameraPitch = 89.0f;
+        if (cameraPitch < -89.0f)
+                cameraPitch = -89.0f;
+
+        Mat4x4 RotMatrixYaw = MakeRotationY(DEG_TO_RAD(cameraYaw));
+        Mat4x4 RotMatrixPitch = MakeRotationX(DEG_TO_RAD(cameraPitch));
+
+        Mat4x4 CameraRotation = MulMatMat(&RotMatrixYaw, &RotMatrixPitch);
+
+        Mat4x4 CameraTranslation = MakeTransMat(
+            Scene->Camera.Position.X,
+            Scene->Camera.Position.Y,
+            Scene->Camera.Position.Z);
+
+        Mat4x4 InvCameraRotation = TransposeMat(&CameraRotation);
+
+        Mat4x4 InvCameraTranslation = MakeTransMat(
+            -Scene->Camera.Position.X,
+            -Scene->Camera.Position.Y,
+            -Scene->Camera.Position.Z);
+
+        Mat4x4 ViewMatrix = MulMatMat(&InvCameraTranslation, &InvCameraRotation);
+
+        Mat4x4 WorldViewMatrix = MulMatMat(&WorldMatrix, &ViewMatrix);
 
         TRI3D *TrisToDraw = calloc(Cube->tri_count, sizeof(TRI3D));
         if (!TrisToDraw)
@@ -421,80 +516,97 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                 return elapsedTime1;
         }
 
-        RotMatrixZ = MulMatMat(&RotMatrixZ, &RotMatrixZCam);
-        RotMatrixY = MulMatMat(&RotMatrixY, &RotMatrixYCam);
-        RotMatrixX = MulMatMat(&RotMatrixX, &RotMatrixXCam);
+        size_t trisDrawn = 0;
 
         for (size_t i = 0; i < Cube->tri_count; ++i)
         {
-                TRI3D tri, triProjected, triTranslated, triRotatedZ, triRotatedZY, triRotatedZX;
+                TRI3D tri, triTransformed, triProjected;
 
                 tri = Cube->tris[i];
-                MulMatVec(&tri.p[0], &triRotatedZ.p[0], &RotMatrixZ);
-                MulMatVec(&tri.p[1], &triRotatedZ.p[1], &RotMatrixZ);
-                MulMatVec(&tri.p[2], &triRotatedZ.p[2], &RotMatrixZ);
 
-                MulMatVec(&triRotatedZ.p[0], &triRotatedZY.p[0], &RotMatrixY);
-                MulMatVec(&triRotatedZ.p[1], &triRotatedZY.p[1], &RotMatrixY);
-                MulMatVec(&triRotatedZ.p[2], &triRotatedZY.p[2], &RotMatrixY);
+                MulMatVec(&tri.p[0], &triTransformed.p[0], &WorldViewMatrix);
+                MulMatVec(&tri.p[1], &triTransformed.p[1], &WorldViewMatrix);
+                MulMatVec(&tri.p[2], &triTransformed.p[2], &WorldViewMatrix);
 
-                MulMatVec(&triRotatedZY.p[0], &triRotatedZX.p[0], &RotMatrixX);
-                MulMatVec(&triRotatedZY.p[1], &triRotatedZX.p[1], &RotMatrixX);
-                MulMatVec(&triRotatedZY.p[2], &triRotatedZX.p[2], &RotMatrixX);
-
-                triTranslated = triRotatedZX;
-                for (int i = 0; i < 3; ++i)
+                int verticesBehind = 0;
+                for (int j = 0; j < 3; ++j)
                 {
-                        triTranslated.p[i].X = triRotatedZX.p[i].X + Cube->origin.X + Scene->Camera.Position.X;
-                        triTranslated.p[i].Y = triRotatedZX.p[i].Y + Cube->origin.Y + Scene->Camera.Position.Y;
-                        triTranslated.p[i].Z = triRotatedZX.p[i].Z + Cube->origin.Z + Scene->Camera.Position.Z;
+                        if (triTransformed.p[j].Z < Scene->Camera.Near)
+                                verticesBehind++;
                 }
+                if (verticesBehind > 0)
+                        continue;
 
-                VEC3 Normal, Line, Line2;
+                VEC3 Normal, Line1, Line2;
+                Line1 = SubVec3(&triTransformed.p[1], &triTransformed.p[0]);
+                Line2 = SubVec3(&triTransformed.p[2], &triTransformed.p[0]);
+                Normal = CrossProdVec3(&Line1, &Line2);
 
-                Line = SubVec3(&triTranslated.p[1], &triTranslated.p[0]);
-                Line2 = SubVec3(&triTranslated.p[2], &triTranslated.p[0]);
+                double normalLength = LenVec3(&Normal);
+                if (normalLength < Scene->Camera.Near)
+                        continue;
 
-                Normal = CrossProdVec3(&Line, &Line2);
                 NormaliseVec3(&Normal);
 
-                if (Normal.X * (triTranslated.p[0].X - Scene->Camera.Position.X) +
-                        Normal.Y * (triTranslated.p[0].Y - Scene->Camera.Position.Y) +
-                        Normal.Z * (triTranslated.p[0].Z - Scene->Camera.Position.Z) <
-                    0.0)
+                VEC3 cameraDir = {0.0, 0.0, -1.0};
+                // if (DotVec3(&Normal, &cameraDir) >= 0.0)
+                //         continue;
+
+                VEC3 LightDir = {0.0, 0.4, -1.0};
+                NormaliseVec3(&LightDir);
+                double dp = DotVec3(&Normal, &LightDir);
+                if (dp < 0.0)
+                        dp = 0.0;
+                COLOUR col = GetCol(tri.col, dp);
+                triProjected.col = col;
+
+                int verticesVisible = 0;
+                for (int j = 0; j < 3; ++j)
                 {
-                        VEC3 LightDir = {0.0, 0.4, -1.0};
-                        NormaliseVec3(&LightDir);
+                        double z = triTransformed.p[j].Z;
+                        if (z < Scene->Camera.Near)
+                                z = Scene->Camera.Near;
 
-                        double dp = DotVec3(&Normal, &LightDir);
-                        COLOUR col = GetCol(tri.col, dp);
-                        triProjected.col = col;
+                        double scale = 1.0;
 
-                        MulMatVec(&triTranslated.p[0], &triProjected.p[0], &ProjectionMatrix);
-                        MulMatVec(&triTranslated.p[1], &triProjected.p[1], &ProjectionMatrix);
-                        MulMatVec(&triTranslated.p[2], &triProjected.p[2], &ProjectionMatrix);
+                        triProjected.p[j].X = triTransformed.p[j].X * scale / z;
+                        triProjected.p[j].Y = triTransformed.p[j].Y * scale / z;
+                        triProjected.p[j].Z = z;
 
-                        triProjected.p[0].X += 1.0;
-                        triProjected.p[0].X *= 0.5 * (double)Scene->Renderer.RendererWidth;
-                        triProjected.p[0].Y += 1.0;
-                        triProjected.p[0].Y *= 0.5 * (double)Scene->Renderer.RendererHeight;
-                        triProjected.p[1].X += 1.0;
-                        triProjected.p[1].X *= 0.5 * (double)Scene->Renderer.RendererWidth;
-                        triProjected.p[1].Y += 1.0;
-                        triProjected.p[1].Y *= 0.5 * (double)Scene->Renderer.RendererHeight;
-                        triProjected.p[2].X += 1.0;
-                        triProjected.p[2].X *= 0.5 * (double)Scene->Renderer.RendererWidth;
-                        triProjected.p[2].Y += 1.0;
-                        triProjected.p[2].Y *= 0.5 * (double)Scene->Renderer.RendererHeight;
-                        memcpy(&TrisToDraw[i], &triProjected, sizeof(TRI3D));
+                        triProjected.p[j].X = (triProjected.p[j].X + 1.0) * 0.5 * Scene->Renderer.RendererWidth;
+                        triProjected.p[j].Y = (1.0 - triProjected.p[j].Y) * 0.5 * Scene->Renderer.RendererHeight;
+
+                        verticesVisible++;
                 }
+
+                if (verticesVisible == 0)
+                        continue;
+
+                memcpy(&TrisToDraw[trisDrawn], &triProjected, sizeof(TRI3D));
+                trisDrawn++;
         }
 
-        qsort(TrisToDraw, Cube->tri_count, sizeof(TRI3D), CompareTriangles);
+        if (trisDrawn > 1)
+        {
+                qsort(TrisToDraw, trisDrawn, sizeof(TRI3D), CompareTriangles);
+        }
 
-        for (size_t i = 0; i < Cube->tri_count; ++i)
+        for (size_t i = 0; i < trisDrawn; ++i)
         {
                 TRI3D *triToDraw = &TrisToDraw[i];
+
+                int valid = 1;
+                //for (int j = 0; j < 3; ++j)
+                //{
+                //        if (triToDraw->p[j].X < 2 * -Scene->Renderer.RendererWidth || triToDraw->p[j].X > 2 * Scene->Renderer.RendererWidth ||
+                //            triToDraw->p[j].Y < 2 * -Scene->Renderer.RendererHeight || triToDraw->p[j].Y > 2 * Scene->Renderer.RendererHeight)
+                //        {
+                //                valid = 0;
+                //                break;
+                //        }
+                //}
+                if (!valid)
+                        continue;
 
                 if (WIRE_FRAME)
                 {
@@ -514,88 +626,6 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                 }
         }
 
-        return elapsedTime1;
         free(TrisToDraw);
+        return elapsedTime1;
 }
-
-// Example from source of this code
-// int main(int argc, char *argv[])
-//{
-//        InitProjectionMat();
-//        Mesh3D *Cube = InitMesh(0);
-//        Cube->ROTX = 180;
-//
-//        if (argc == 1)
-//        {
-//                LoadMeshFromFile("monitor.obj", Cube);
-//        }
-//        else
-//        {
-//                LoadMeshFromFile(argv[1], Cube);
-//        }
-//
-//        Cube->origin = (VEC3){0, 0, 10};
-//
-//        // Initialize SDL
-//        if (SDL_Init(SDL_INIT_VIDEO) < 0)
-//        {
-//                printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
-//                return 1;
-//        }
-//
-//        Scene->Window.Window = SDL_CreateWindow("3D Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-//                                  SCREEN_WIDTH * SCREEN_SCALE, SCREEN_HEIGHT * SCREEN_SCALE, SDL_WINDOW_SHOWN);
-//        if (!Scene->Window.Window)
-//        {
-//                printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
-//                SDL_Quit();
-//                return 1;
-//        }
-//
-//        Scene->Renderer.Renderer = SDL_CreateRenderer(Scene->Window.Window, -1, SDL_RENDERER_ACCELERATED);
-//        if (!Scene->Renderer.Renderer)
-//        {
-//                printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
-//                SDL_DestroyWindow(Scene->Window.Window);
-//                SDL_Quit();
-//                return 1;
-//        }
-//
-//        SDL_RenderSetLogicalSize(Scene->Renderer.Renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
-//
-//        bool quit = false;
-//        SDL_Event event;
-//
-//        while (!quit)
-//        {
-//                double startFrameTime = SDL_GetTicks();
-//                while (SDL_PollEvent(&event) != 0)
-//                {
-//                        if (event.type == SDL_QUIT)
-//                        {
-//                                quit = true;
-//                        }
-//                }
-//
-//                HandleInput();
-//
-//                SDL_SetRenderDrawColor(Scene->Renderer.Renderer, 0, 0, 0, 255);
-//                SDL_RenderClear(Scene->Renderer.Renderer);
-//                DrawObject(Cube);
-//                SDL_RenderPresent(Scene->Renderer.Renderer);
-//
-//                double frameTime = SDL_GetTicks() - startFrameTime;
-//                if (frameTime < frameDelay)
-//                {
-//                        SDL_Delay(frameDelay - frameTime); // Delay to maintain the target FPS
-//                }
-//        }
-//
-//        SDL_DestroyRenderer(Scene->Renderer.Renderer);
-//        SDL_DestroyWindow(Scene->Window.Window);
-//        SDL_Quit();
-//
-//        DelMesh(Cube);
-//        return 0;
-//}
-//
