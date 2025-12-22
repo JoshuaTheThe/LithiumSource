@@ -36,6 +36,7 @@ typedef struct Mesh3DS
         TRI3D *tris;
         size_t tri_count;
         VEC3 origin;
+        VEC3 Scale;
         double ROTX, ROTY, ROTZ;
 } Mesh3D;
 

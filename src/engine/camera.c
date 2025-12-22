@@ -18,11 +18,6 @@
 #include <engine/scene.h>
 #include <todo.h>
 
-static double min(double x, double y)
-{
-        return (x < y) ? x : y;
-}
-
 static Mat4x4 ProjectionMatrix = {{{0}}};
 
 void SDL_SWAP(int *a, int *b)
@@ -90,6 +85,16 @@ void MulMatVec(VEC3 *i, VEC3 *o, Mat4x4 *m)
                 o->Y /= w;
                 o->Z /= w;
         }
+}
+
+Mat4x4 MakeScaleMat(float sx, float sy, float sz)
+{
+        Mat4x4 m = {0};
+        m.m[0][0] = sx;
+        m.m[1][1] = sy;
+        m.m[2][2] = sz;
+        m.m[3][3] = 1.0f;
+        return m;
 }
 
 Mat4x4 MatMakeIdent(void)
@@ -182,95 +187,7 @@ Mat4x4 MulMatMat(Mat4x4 *a, Mat4x4 *b)
         return o;
 }
 
-Mesh3D *InitMesh(size_t triCount)
-{
-        Mesh3D *mesh = malloc(sizeof(Mesh3D));
-        mesh->tris = malloc(sizeof(TRI3D) * triCount);
-        mesh->tri_count = triCount;
-        mesh->origin = (VEC3){0.0, 0.0, 0.0};
-        return mesh;
-}
-
-void DelMesh(Mesh3D *mesh)
-{
-        free(mesh->tris);
-        free(mesh);
-}
-
-bool LoadMeshFromFile(const char *fileName, Mesh3D *mesh)
-{
-        FILE *fp = fopen(fileName, "r");
-        if (fp == NULL)
-                return false;
-
-        if (mesh->tris)
-                free(mesh->tris);
-        char line[128];
-        size_t vertex_count = 0, face_count = 0;
-        VEC3 *vertices = NULL;
-        TRI3D *triangles = NULL;
-
-        while (fgets(line, sizeof(line), fp))
-        {
-                if (line[0] == 'v' && line[1] == ' ')
-                {
-                        vertex_count++;
-                }
-                else if (line[0] == 'f' && line[1] == ' ')
-                {
-                        face_count++;
-                }
-        }
-
-        vertices = (VEC3 *)malloc(vertex_count * sizeof(VEC3));
-        triangles = (TRI3D *)malloc(face_count * sizeof(TRI3D));
-
-        if (vertices == NULL || triangles == NULL)
-        {
-                free(vertices);
-                free(triangles);
-                fclose(fp);
-                return false;
-        }
-
-        rewind(fp);
-        size_t vertex_index = 0, face_index = 0;
-
-        while (fgets(line, sizeof(line), fp))
-        {
-                if (line[0] == 'v' && line[1] == ' ')
-                {
-                        VEC3 v;
-                        sscanf(line, "v %lf %lf %lf", &v.X, &v.Y, &v.Z);
-                        vertices[vertex_index++] = v;
-                }
-                else if (line[0] == 'f' && line[1] == ' ')
-                {
-                        int v1, v2, v3;
-                        sscanf(line, "f %d %d %d", &v1, &v2, &v3);
-                        triangles[face_index].p[0] = vertices[v1 - 1];
-                        triangles[face_index].p[1] = vertices[v2 - 1];
-                        triangles[face_index].p[2] = vertices[v3 - 1];
-                        triangles[face_index].col.r = rand() & 255;
-                        triangles[face_index].col.g = rand() & 255;
-                        triangles[face_index].col.b = rand() & 255;
-                        face_index++;
-                }
-        }
-
-        // Populate the mesh structure
-        mesh->tris = triangles;
-        mesh->tri_count = face_count;
-        mesh->origin = (VEC3){0.0, 0.0, 0.0}; // Set origin to zero
-
-        // Cleanup
-        free(vertices);
-        fclose(fp);
-
-        return true;
-}
-
-Mat4x4 TransposeMat(const Mat4x4 *mat)
+static Mat4x4 TransposeMat(const Mat4x4 *mat)
 {
         Mat4x4 result;
 
@@ -285,7 +202,7 @@ Mat4x4 TransposeMat(const Mat4x4 *mat)
         return result;
 }
 
-Mat4x4 InvertViewMatrix(const Mat4x4 *mat)
+static Mat4x4 InvertViewMatrix(const Mat4x4 *mat)
 {
         // For a view matrix which is a rotation + translation matrix:
         // R is 3x3 rotation, T is translation
@@ -342,7 +259,7 @@ void InitProjectionMat(SCENE *Scene)
         ProjectionMatrix.m[3][3] = 0.0;
 }
 
-void sortVertices(int *y0, int *y1, int *y2, int *x0, int *x1, int *x2)
+static void sortVertices(int *y0, int *y1, int *y2, int *x0, int *x1, int *x2)
 {
         if (*y1 < *y0)
         {
@@ -361,49 +278,110 @@ void sortVertices(int *y0, int *y1, int *y2, int *x0, int *x1, int *x2)
         }
 }
 
-int interpolateX(int y1, int y2, int x1, int x2, int y)
+static int interpolateX(int y1, int y2, int x1, int x2, int y)
 {
         if (y1 == y2)
                 return x1;
         return x1 + (x2 - x1) * (y - y1) / (y2 - y1);
 }
 
-void DrawTri(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b)
+static void DrawTri(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b)
 {
+        int minY = y0, maxY = y0;
+        if (y1 < minY)
+                minY = y1;
+        if (y2 < minY)
+                minY = y2;
+        if (y1 > maxY)
+                maxY = y1;
+        if (y2 > maxY)
+                maxY = y2;
+
+        if (minY >= Scene->Renderer.RendererHeight || maxY < 0)
+                return;
+
+        int startY = minY < 0 ? 0 : minY;
+        int endY = maxY >= Scene->Renderer.RendererHeight ? Scene->Renderer.RendererHeight - 1 : maxY;
+
         sortVertices(&y0, &y1, &y2, &x0, &x1, &x2);
+        SDL_SetRenderDrawColor(Scene->Renderer.Renderer, r, g, b, 255);
 
-        for (int y = y0; y <= y2; ++y)
+        float dxdy_left1 = (y1 - y0 != 0) ? (float)(x1 - x0) / (y1 - y0) : 0;
+        float dxdy_right1 = (y2 - y0 != 0) ? (float)(x2 - x0) / (y2 - y0) : 0;
+
+        float dxdy_left2 = (y2 - y1 != 0) ? (float)(x2 - x1) / (y2 - y1) : 0;
+
+        float curXLeft, curXRight;
+
+        if (y0 != y1)
         {
-                int xLeft, xRight;
+                curXLeft = x0;
+                curXRight = x0;
 
-                if (y < y1)
-                {
-                        xLeft = interpolateX(y0, y2, x0, x2, y);
-                        xRight = interpolateX(y0, y1, x0, x1, y);
-                }
-                else
-                {
-                        xLeft = interpolateX(y1, y2, x1, x2, y);
-                        xRight = interpolateX(y0, y2, x0, x2, y);
-                }
+                int yStart = (y0 < 0) ? 0 : y0;
+                int yEnd = (y1 > endY) ? endY : y1;
 
-                if (xLeft > xRight)
+                for (int y = yStart; y <= yEnd; ++y)
                 {
-                        SDL_SWAP(&xLeft, &xRight);
-                }
+                        int xLeft = (int)curXLeft;
+                        int xRight = (int)curXRight;
 
-                for (int x = xLeft; x <= xRight; ++x)
-                {
-                        if (y < Scene->Renderer.RendererHeight && x < Scene->Renderer.RendererWidth)
+                        if (xLeft > xRight)
                         {
-                                SDL_SetRenderDrawColor(Scene->Renderer.Renderer, r, g, b, 255);
-                                SDL_RenderDrawPoint(Scene->Renderer.Renderer, x, y);
+                                SDL_SWAP(&xLeft, &xRight);
                         }
+
+                        if (xLeft < 0)
+                                xLeft = 0;
+                        if (xRight >= Scene->Renderer.RendererWidth)
+                                xRight = Scene->Renderer.RendererWidth - 1;
+
+                        if (xLeft <= xRight)
+                        {
+                                SDL_RenderDrawLine(Scene->Renderer.Renderer, xLeft, y, xRight, y);
+                        }
+
+                        if (y < y1)
+                        {
+                                curXLeft += dxdy_left1;
+                                curXRight += dxdy_right1;
+                        }
+                }
+        }
+
+        if (y1 != y2)
+        {
+                curXLeft = x1;
+
+                int yStart = (y1 < 0) ? 0 : y1;
+                int yEnd = (y2 > endY) ? endY : y2;
+
+                for (int y = yStart; y <= yEnd; ++y)
+                {
+                        int xLeft = (int)curXLeft;
+                        int xRight = (int)(x0 + (y - y0) * dxdy_right1);
+
+                        if (xLeft > xRight)
+                        {
+                                SDL_SWAP(&xLeft, &xRight);
+                        }
+
+                        if (xLeft < 0)
+                                xLeft = 0;
+                        if (xRight >= Scene->Renderer.RendererWidth)
+                                xRight = Scene->Renderer.RendererWidth - 1;
+
+                        if (xLeft <= xRight)
+                        {
+                                SDL_RenderDrawLine(Scene->Renderer.Renderer, xLeft, y, xRight, y);
+                        }
+
+                        curXLeft += dxdy_left2;
                 }
         }
 }
 
-void DrawTriWire(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b)
+static void DrawTriWire(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b)
 {
         SDL_SetRenderDrawColor(Scene->Renderer.Renderer, r, g, b, 255);
         SDL_RenderDrawLine(Scene->Renderer.Renderer, x0, y0, x1, y1);
@@ -411,7 +389,7 @@ void DrawTriWire(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, i
         SDL_RenderDrawLine(Scene->Renderer.Renderer, x2, y2, x0, y0);
 }
 
-COLOUR GetCol(COLOUR col, double lum)
+static COLOUR GetCol(COLOUR col, double lum)
 {
         if (lum < -1)
         {
@@ -431,12 +409,12 @@ COLOUR GetCol(COLOUR col, double lum)
         return (COLOUR){R, G, B};
 }
 
-double GetTriangleDepth(const TRI3D *tri)
+static double GetTriangleDepth(const TRI3D *tri)
 {
         return (tri->p[0].Z + tri->p[1].Z + tri->p[2].Z) / 3.0;
 }
 
-int CompareTriangles(const void *a, const void *b)
+static int CompareTriangles(const void *a, const void *b)
 {
         const TRI3D *triA = (const TRI3D *)a;
         const TRI3D *triB = (const TRI3D *)b;
@@ -478,7 +456,14 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
             Cube->origin.X,
             Cube->origin.Y,
             Cube->origin.Z);
-        Mat4x4 WorldMatrix = MulMatMat(&ObjectRotation, &ObjectTranslation);
+
+        Mat4x4 ScaleMatrix = MakeScaleMat(
+            Cube->Scale.X,
+            Cube->Scale.Y,
+            Cube->Scale.Z);
+
+        Mat4x4 WorldMatrix = MulMatMat(&ScaleMatrix, &ObjectRotation);
+        WorldMatrix = MulMatMat(&WorldMatrix, &ObjectTranslation);
 
         float cameraYaw = Scene->Camera.Rotation.Y;
         float cameraPitch = Scene->Camera.Rotation.X;
@@ -567,10 +552,11 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                         if (z < Scene->Camera.Near)
                                 z = Scene->Camera.Near;
 
-                        double scale = 1.0;
+                        double aspect = (double)Scene->Renderer.RendererWidth / Scene->Renderer.RendererHeight;
+                        double fovScale = 1.0 / tan(DEG_TO_RAD(Scene->Camera.FOV) * 0.5);
 
-                        triProjected.p[j].X = triTransformed.p[j].X * scale / z;
-                        triProjected.p[j].Y = triTransformed.p[j].Y * scale / z;
+                        triProjected.p[j].X = triTransformed.p[j].X * fovScale / z;
+                        triProjected.p[j].Y = triTransformed.p[j].Y * fovScale / z;
                         triProjected.p[j].Z = z;
 
                         triProjected.p[j].X = (triProjected.p[j].X + 1.0) * 0.5 * Scene->Renderer.RendererWidth;
@@ -596,15 +582,15 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                 TRI3D *triToDraw = &TrisToDraw[i];
 
                 int valid = 1;
-                //for (int j = 0; j < 3; ++j)
+                // for (int j = 0; j < 3; ++j)
                 //{
-                //        if (triToDraw->p[j].X < 2 * -Scene->Renderer.RendererWidth || triToDraw->p[j].X > 2 * Scene->Renderer.RendererWidth ||
-                //            triToDraw->p[j].Y < 2 * -Scene->Renderer.RendererHeight || triToDraw->p[j].Y > 2 * Scene->Renderer.RendererHeight)
-                //        {
-                //                valid = 0;
-                //                break;
-                //        }
-                //}
+                //         if (triToDraw->p[j].X < 2 * -Scene->Renderer.RendererWidth || triToDraw->p[j].X > 2 * Scene->Renderer.RendererWidth ||
+                //             triToDraw->p[j].Y < 2 * -Scene->Renderer.RendererHeight || triToDraw->p[j].Y > 2 * Scene->Renderer.RendererHeight)
+                //         {
+                //                 valid = 0;
+                //                 break;
+                //         }
+                // }
                 if (!valid)
                         continue;
 

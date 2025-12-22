@@ -8,18 +8,25 @@
 #include <engine/camera.h>
 #include <engine/draw.h>
 #include <engine/scene.h>
+#include <engine/mesh.h>
 
 int main(int Count, char **Arguments)
 {
-        SCENE *Scene = SceneInit("Li3D", 0, 0, 800, 600);
+        const int width = 1024;
+        const int height = 768;
+        const int scale = 1;
+        SCENE *Scene = SceneInit("Li3D", 0, 0, width*scale, height*scale);
         InitProjectionMat(Scene);
-        SDL_RenderSetLogicalSize(Scene->Renderer.Renderer, 400, 300);
-        Scene->Renderer.RendererHeight /= 2;
-        Scene->Renderer.RendererWidth /= 2;
+        SDL_RenderSetLogicalSize(Scene->Renderer.Renderer, width, height);
+        Scene->Renderer.RendererHeight /= scale;
+        Scene->Renderer.RendererWidth /= scale;
         Mesh3D *Mesh = InitMesh(0);
-        LoadMeshFromFile("mario.obj", Mesh);
-        Mesh->ROTX = 0;
-        Mesh->origin = (VEC3){0, -5, 0};
+        LoadMeshFromFile("skull.obj", Mesh);
+        //Mesh->ROTX = -90;
+        Mesh->origin = (VEC3){0, -20, 0};
+        Mesh->Scale.X = 10.0;
+        Mesh->Scale.Y = 10.0;
+        Mesh->Scale.Z = 10.0;
         
         while (Scene)
         {
@@ -50,11 +57,11 @@ int main(int Count, char **Arguments)
                 }
                 if (Scene->Keymap['z'])
                 {
-                        Scene->Camera.Rotation.Y += (double)Scene->dt;
+                        Scene->Camera.Rotation.Y += 5*(double)Scene->dt;
                 }
                 if (Scene->Keymap['x'])
                 {
-                        Scene->Camera.Rotation.Y -= (double)Scene->dt;
+                        Scene->Camera.Rotation.Y -= 5*(double)Scene->dt;
                 }
                 if (Scene->Keymap['q'])
                 {

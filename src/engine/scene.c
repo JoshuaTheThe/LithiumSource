@@ -20,7 +20,6 @@ static void Init(void)
 SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
 {
         SCENE *Scene = calloc(1, sizeof(*Scene));
-        bool old_init = initialised;
         if (!Title || W <= 0 || H <= 0 || X < 0 || Y < 0 || !Scene)
         {
                 if (Scene)
@@ -52,7 +51,7 @@ SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
         Scene->Camera.Rotation.X = 0.0;
         Scene->Camera.Rotation.Y = 0.0;
         Scene->Camera.Rotation.Z = 0.0;
-        Scene->Camera.Near = 0.01;
+        Scene->Camera.Near = 0.1;
         Scene->Camera.Far = 1000.0;
         return Scene;
 }
