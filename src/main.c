@@ -13,9 +13,9 @@ int main( int Count, char **Arguments )
 {
         SCENE *Scene = SceneInit("Li3D", 0, 0, 800, 600);
         Mesh3D *Mesh = InitMesh(0);
-        Mesh->ROTX = 180;
         Scene->Camera.FOV = 60;
         LoadMeshFromFile("skull.obj", Mesh);
+        Mesh->ROTX = 180;
         Mesh->origin = (VEC3){0, 0, 5};
         while(Scene)
         {
