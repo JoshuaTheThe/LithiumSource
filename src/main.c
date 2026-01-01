@@ -52,7 +52,8 @@ int main(int Count, char **Arguments)
         Scene->Renderer.RendererHeight /= scale;
         Scene->Renderer.RendererWidth /= scale;
         Mesh3D *Mesh = InitMesh(0);
-        LoadMeshFromFile("assets/test.obj", Mesh);
+        LoadMeshFromFile("assets/c0a0.obj", Mesh);
+        Mesh->origin.X = 245;
 
         size_t jumpidx = LoadSound(Scene, "assets/jump.wav");
         size_t walkidxs[4];
@@ -62,10 +63,10 @@ int main(int Count, char **Arguments)
         walkidxs[3] = LoadSound(Scene, "assets/walk_3.wav");
 
         Scene->Camera.Bounds.Max = (VEC3){.X = 1.0, .Y = 1.0, .Z = 1.0};
-        Scene->Camera.Bounds.Min = (VEC3){.X = -1.0, .Y = -2.5, .Z = -1.0};
+        Scene->Camera.Bounds.Min = (VEC3){.X = -1.0, .Y = -5.0, .Z = -1.0};
         Scene->Camera.Position.Y = 10.0;
         Scene->Camera.Velocity.Y = 0.1;
-        double speed = 0.1;
+        double speed = 1;
 
         int walk_cycle = 0;
 
