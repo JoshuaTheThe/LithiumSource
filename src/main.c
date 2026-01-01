@@ -52,8 +52,9 @@ int main(int Count, char **Arguments)
         Scene->Renderer.RendererHeight /= scale;
         Scene->Renderer.RendererWidth /= scale;
         Mesh3D *Mesh = InitMesh(0);
-        LoadMeshFromFile("assets/c0a0.obj", Mesh);
-        Mesh->origin.X = 245;
+        LoadMeshFromFile("assets/c1a0.obj", Mesh);
+        ScaleMesh(Mesh, 0.1);
+        Mesh->origin.X = 0;
 
         size_t jumpidx = LoadSound(Scene, "assets/jump.wav");
         size_t walkidxs[4];
@@ -63,12 +64,14 @@ int main(int Count, char **Arguments)
         walkidxs[3] = LoadSound(Scene, "assets/walk_3.wav");
 
         Scene->Camera.Bounds.Max = (VEC3){.X = 1.0, .Y = 1.0, .Z = 1.0};
-        Scene->Camera.Bounds.Min = (VEC3){.X = -1.0, .Y = -5.0, .Z = -1.0};
+        Scene->Camera.Bounds.Min = (VEC3){.X = -1.0, .Y = -6.2, .Z = -1.0};
         Scene->Camera.Position.Y = 10.0;
         Scene->Camera.Velocity.Y = 0.1;
         double speed = 1;
 
         int walk_cycle = 0;
+
+        bool flying = false;
 
         while (Scene)
         {
@@ -88,8 +91,26 @@ int main(int Count, char **Arguments)
                     -sin(yaw)};
 
                 /* Physics */
-                PhysicsTick(Scene, Mesh);
+                if (!flying)
+                        PhysicsTick(Scene, Mesh);
+                else
+                {
+                        Scene->Camera.Velocity.X -= Scene->Camera.Velocity.X * FRICTION * Scene->dt * PHYSICS_WAIT;
+                        Scene->Camera.Velocity.Y -= Scene->Camera.Velocity.Y * FRICTION * Scene->dt * PHYSICS_WAIT;
+                        Scene->Camera.Velocity.Z -= Scene->Camera.Velocity.Z * FRICTION * Scene->dt * PHYSICS_WAIT;
+                        Scene->Camera.Position.X += Scene->Camera.Velocity.X * Scene->dt * PHYSICS_WAIT;
+                        Scene->Camera.Position.Y += Scene->Camera.Velocity.Y * Scene->dt * PHYSICS_WAIT;
+                        Scene->Camera.Position.Z += Scene->Camera.Velocity.Z * Scene->dt * PHYSICS_WAIT;
+                }
 
+                if (Scene->Keymap['q'] && flying)
+                {
+                        speed = 4;
+                }
+                else
+                {
+                        speed = 1;
+                }
                 if (Scene->Keymap['w'])
                 {
                         Scene->Camera.Velocity.X += speed * forward.X;
@@ -126,11 +147,28 @@ int main(int Count, char **Arguments)
                 {
                         Scene->Camera.Rotation.X -= 45 * (double)Scene->dt;
                 }
-                if (Scene->Keymap[' '] && Scene->Camera.Velocity.Y == 0.00) /* Stinky hack */
+                if (Scene->Keymap['c'] && flying)
+                {
+                        Scene->Camera.Velocity.Y -= speed;
+                }
+                if (Scene->Keymap[' '] && flying)
+                {
+                        Scene->Camera.Velocity.Y += speed;
+                }
+                else if (Scene->Keymap[' '] && Scene->Camera.Velocity.Y == 0.00) /* Stinky hack */
                 {
                         Scene->Camera.Velocity.Y = GRAVITY * JUMP_POWER;
                         PlaySound(Scene, jumpidx);
                 }
+                if (Scene->Keymap['v'])
+                {
+                        flying = true;
+                }
+                if (Scene->Keymap['n'])
+                {
+                        flying = false;
+                }
+
 
                 Scene->footstep_timer -= Scene->dt;
 
