@@ -4,7 +4,7 @@ const double TERMINAL_VELOCITY = 100.0;
 const double GRAVITY = 9.81;
 const double FRICTION = 8.0;
 const double PHYSICS_WAIT = 1.0;
-const double JUMP_POWER = 1.0;
+const double JUMP_POWER = 0.8;
 
 static BOUNDS GetPlayerBounds(SCENE *Scene)
 {
@@ -24,7 +24,7 @@ static BOUNDS GetPlayerBounds(SCENE *Scene)
 static BOUNDS GetTriangleBounds(const TRI3D *Tri, VEC3 Origin)
 {
         BOUNDS b;
-        VEC3 Epsilon = (VEC3){.X = 0.1, .Y = 0.1, .Z = 0.1};
+        VEC3 Epsilon = (VEC3){.X = 0.15, .Y = 0.1, .Z = 0.15};
         b.Min = b.Max = Tri->p[0];
 
         for (int i = 1; i < 3; i++)
@@ -158,16 +158,47 @@ void PhysicsTick(SCENE *Scene)
         Scene->Camera.Velocity.X -= Scene->Camera.Velocity.X * FRICTION * Scene->dt * PHYSICS_WAIT;
         Scene->Camera.Velocity.Z -= Scene->Camera.Velocity.Z * FRICTION * Scene->dt * PHYSICS_WAIT;
         Scene->Camera.Velocity.Y -= GRAVITY * Scene->dt * PHYSICS_WAIT;
+
+        if (Scene->Camera.Velocity.Y < -TERMINAL_VELOCITY)
+                Scene->Camera.Velocity.Y = -TERMINAL_VELOCITY;
+        if (Scene->Camera.Velocity.Y > TERMINAL_VELOCITY)
+                Scene->Camera.Velocity.Y = TERMINAL_VELOCITY;
+
         Scene->Grounded = false;
-        for (size_t i = 0; i < Scene->count; ++i)
+
+        const double maxStep = 0.05;
+
+        double moveX = Scene->Camera.Velocity.X * Scene->dt * PHYSICS_WAIT;
+        double moveZ = Scene->Camera.Velocity.Z * Scene->dt * PHYSICS_WAIT;
+        double moveY = Scene->Camera.Velocity.Y * Scene->dt * PHYSICS_WAIT;
+
+        int stepsX = (int)ceil(fabs(moveX) / maxStep);
+        int stepsZ = (int)ceil(fabs(moveZ) / maxStep);
+        int stepsY = (int)ceil(fabs(moveY) / maxStep);
+        int steps = fmax(fmax(stepsX, stepsZ), stepsY);
+        if (steps < 1)
+                steps = 1;
+
+        double dx = moveX / steps;
+        double dz = moveZ / steps;
+        double dy = moveY / steps;
+
+        for (int i = 0; i < steps; ++i)
         {
-                Scene->Camera.Position.X += Scene->Camera.Velocity.X * Scene->dt * PHYSICS_WAIT;
-                ResolveAxis(Scene, Scene->items[i], AXIS_X);
-                Scene->Camera.Position.Z += Scene->Camera.Velocity.Z * Scene->dt * PHYSICS_WAIT;
-                ResolveAxis(Scene, Scene->items[i], AXIS_Z);
-                Scene->Camera.Position.Y += Scene->Camera.Velocity.Y * Scene->dt * PHYSICS_WAIT;
-                ResolveAxis(Scene, Scene->items[i], AXIS_Y);
-                if (!Scene->Grounded)
-                        Scene->Grounded = ResolveGround(Scene, Scene->items[i]);
+                Scene->Camera.Position.X += dx;
+                for (size_t j = 0; j < Scene->count; ++j)
+                        ResolveAxis(Scene, Scene->items[j], AXIS_X);
+
+                Scene->Camera.Position.Z += dz;
+                for (size_t j = 0; j < Scene->count; ++j)
+                        ResolveAxis(Scene, Scene->items[j], AXIS_Z);
+
+                Scene->Camera.Position.Y += dy;
+                for (size_t j = 0; j < Scene->count; ++j)
+                        ResolveAxis(Scene, Scene->items[j], AXIS_Y);
+
+                for (size_t j = 0; j < Scene->count; ++j)
+                        if (!Scene->Grounded)
+                                Scene->Grounded = ResolveGround(Scene, Scene->items[j]);
         }
 }

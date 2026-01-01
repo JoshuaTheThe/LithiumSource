@@ -59,6 +59,7 @@ int main(int Count, char **Arguments)
 
         Mesh = InitMesh(0);
         LoadMeshFromFile("assets/skull.obj", Mesh);
+        ScaleMesh(Mesh, 10.0);
         da_append(Scene, Mesh);
 
         size_t jumpidx = LoadSound(Scene, "assets/jump.wav");
@@ -72,7 +73,7 @@ int main(int Count, char **Arguments)
         Scene->Camera.Bounds.Min = (VEC3){.X = -1.0, .Y = -6.2, .Z = -1.0};
         Scene->Camera.Position.Y = 10.0;
         Scene->Camera.Velocity.Y = 0.1;
-        double speed = 1;
+        double speed = 2;
 
         int walk_cycle = 0;
 
@@ -114,7 +115,7 @@ int main(int Count, char **Arguments)
                 }
                 else
                 {
-                        speed = 1;
+                        speed = 2;
                 }
                 if (Scene->Keymap['w'])
                 {
