@@ -153,16 +153,21 @@ static bool ResolveGround(SCENE *Scene, Mesh3D *Mesh)
         return grounded;
 }
 
-void PhysicsTick(SCENE *Scene, Mesh3D *Ground)
+void PhysicsTick(SCENE *Scene)
 {
         Scene->Camera.Velocity.X -= Scene->Camera.Velocity.X * FRICTION * Scene->dt * PHYSICS_WAIT;
         Scene->Camera.Velocity.Z -= Scene->Camera.Velocity.Z * FRICTION * Scene->dt * PHYSICS_WAIT;
         Scene->Camera.Velocity.Y -= GRAVITY * Scene->dt * PHYSICS_WAIT;
-        Scene->Camera.Position.X += Scene->Camera.Velocity.X * Scene->dt * PHYSICS_WAIT;
-        ResolveAxis(Scene, Ground, AXIS_X);
-        Scene->Camera.Position.Z += Scene->Camera.Velocity.Z * Scene->dt * PHYSICS_WAIT;
-        ResolveAxis(Scene, Ground, AXIS_Z);
-        Scene->Camera.Position.Y += Scene->Camera.Velocity.Y * Scene->dt * PHYSICS_WAIT;
-        Scene->Grounded = ResolveGround(Scene, Ground);
-        ResolveAxis(Scene, Ground, AXIS_Y);
+        Scene->Grounded = false;
+        for (size_t i = 0; i < Scene->count; ++i)
+        {
+                Scene->Camera.Position.X += Scene->Camera.Velocity.X * Scene->dt * PHYSICS_WAIT;
+                ResolveAxis(Scene, Scene->items[i], AXIS_X);
+                Scene->Camera.Position.Z += Scene->Camera.Velocity.Z * Scene->dt * PHYSICS_WAIT;
+                ResolveAxis(Scene, Scene->items[i], AXIS_Z);
+                Scene->Camera.Position.Y += Scene->Camera.Velocity.Y * Scene->dt * PHYSICS_WAIT;
+                ResolveAxis(Scene, Scene->items[i], AXIS_Y);
+                if (!Scene->Grounded)
+                        Scene->Grounded = ResolveGround(Scene, Scene->items[i]);
+        }
 }

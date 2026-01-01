@@ -11,6 +11,6 @@ extern const double FRICTION;
 extern const double PHYSICS_WAIT;
 extern const double JUMP_POWER;
 
-void PhysicsTick(SCENE *Scene, Mesh3D *Ground);
+void PhysicsTick(SCENE *Scene);
 
 #endif

@@ -58,7 +58,7 @@ int main(int Count, char **Arguments)
         da_append(Scene, Mesh);
 
         Mesh = InitMesh(0);
-        LoadMeshFromFile("assets/mon guy.obj", Mesh);
+        LoadMeshFromFile("assets/skull.obj", Mesh);
         da_append(Scene, Mesh);
 
         size_t jumpidx = LoadSound(Scene, "assets/jump.wav");
@@ -97,7 +97,7 @@ int main(int Count, char **Arguments)
 
                 /* Physics */
                 if (!flying)
-                        PhysicsTick(Scene, Mesh);
+                        PhysicsTick(Scene);
                 else
                 {
                         Scene->Camera.Velocity.X -= Scene->Camera.Velocity.X * FRICTION * Scene->dt * PHYSICS_WAIT;
