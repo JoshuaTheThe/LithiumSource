@@ -17,8 +17,14 @@
 #include <engine/physics.h>
 #include <engine/sound.h>
 
+int compile(void);
+
 int main(int Count, char **Arguments)
 {
+        if (Count == 2 && !strncmp("--compile", Arguments[1], 10))
+        {
+                return compile();
+        }
         const int width = 500;
         const int height = 500;
         const int scale = 2;
