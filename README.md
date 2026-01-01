@@ -8,3 +8,5 @@ gcc src/compile.c -o bin/main -DFIRST
 
 now that you have the init compiler, run it
 now to recompile, run with the --compile flag
+
+![the Bob-Omb battlefield map displayed using the engine](./example%20images/bob-omb%20battlefield.png)
