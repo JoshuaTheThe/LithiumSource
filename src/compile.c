@@ -97,7 +97,7 @@ void compile_file(const char *src_path, const char *compiler, const char *includ
 
         char cmd[MAX_PATH * 3];
         if (is_c_file)
-                snprintf(cmd, sizeof(cmd), "%s %s -c %s -o %s -Wall -Wextra -fno-ident -fno-asynchronous-unwind-tables -g0", compiler, include, src_path, output_file);
+                snprintf(cmd, sizeof(cmd), "%s %s -c %s -o %s -Wall -Wextra -fno-ident -fno-asynchronous-unwind-tables", compiler, include, src_path, output_file);
         else
                 snprintf(cmd, sizeof(cmd), "%s -c %s -o %s", compiler, src_path, output_file);
 
@@ -167,7 +167,12 @@ void compile(void)
                 printf("  %s\n", other_files.files[i]);
 
         printf("\n=== Linking ===\n");
-        char link_cmd[MAX_PATH * 4] = "cc -o bin/main.tmp";
+
+#ifdef _WIN32
+        char link_cmd[MAX_PATH * 4] = "gcc -o bin/main.tmp.exe";
+#else
+        char link_cmd[MAX_PATH * 4] = "gcc -o bin/main.tmp";
+#endif
         for (size_t i = 0; i < engine_files.count; i++)
         {
                 strcat(link_cmd, " ");
@@ -186,7 +191,11 @@ void compile(void)
                 exit(1);
         }
         system("rm bin/main");
+#ifdef _WIN32
+        system("cp bin/main.tmp.exe bin/main.exe");
+#else
         system("cp bin/main.tmp bin/main");
+#endif
         printf("Linking successful: bin/main\n");
 
         file_array_free(&all_object_files);
