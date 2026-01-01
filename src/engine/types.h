@@ -169,4 +169,6 @@ static inline VEC3 CrossProdVec3(VEC3 *a, VEC3 *b)
         return v;
 }
 
+extern char *ProgramPath;
+
 #endif

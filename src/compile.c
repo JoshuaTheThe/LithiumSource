@@ -167,7 +167,7 @@ void compile(void)
                 printf("  %s\n", other_files.files[i]);
 
         printf("\n=== Linking ===\n");
-        char link_cmd[MAX_PATH * 4] = "cc -o bin/main";
+        char link_cmd[MAX_PATH * 4] = "cc -o bin/main.tmp";
         for (size_t i = 0; i < engine_files.count; i++)
         {
                 strcat(link_cmd, " ");
@@ -185,6 +185,8 @@ void compile(void)
                 fprintf(stderr, "Linking failed!\n");
                 exit(1);
         }
+        system("rm bin/main");
+        system("cp bin/main.tmp bin/main");
         printf("Linking successful: bin/main\n");
 
         file_array_free(&all_object_files);

@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <libgen.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
@@ -18,6 +19,8 @@
 #include <engine/sound.h>
 
 int compile(void);
+
+char *ProgramPath = NULL;
 
 int main(int Count, char **Arguments)
 {
@@ -35,6 +38,11 @@ int main(int Count, char **Arguments)
                 fprintf(stderr, "Unable to open audio: %s\n", SDL_GetError());
                 exit(-1);
         }
+
+        ProgramPath = strdup(Arguments[0]);
+        if (!ProgramPath)
+                goto end;
+        ProgramPath = dirname(ProgramPath);
 
         Mix_AllocateChannels(16);
 
@@ -148,6 +156,8 @@ int main(int Count, char **Arguments)
 
         SceneEnd(NULL, true);
         DelMesh(Mesh);
+        free(ProgramPath);
+end:
         (void)Count, (void)Arguments;
         return (0);
 }

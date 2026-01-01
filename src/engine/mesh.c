@@ -68,9 +68,16 @@ bool PlayerCollides(SCENE *Scene, TRI3D *Tri, VEC3 Origin)
 
 bool LoadMeshFromFile(const char *fileName, Mesh3D *mesh)
 {
-        FILE *fp = fopen(fileName, "r");
+        size_t sz = strnlen(fileName, 512) + strnlen(ProgramPath, 512) + 2;
+        char *FullPath = calloc(1, sz);
+        if (!FullPath)
+                TODO();
+        snprintf(FullPath, sz, "%s/%s", ProgramPath, fileName);
+
+        FILE *fp = fopen(FullPath, "r");
         if (fp == NULL)
                 return false;
+        free(FullPath);
 
         if (mesh->tris)
                 free(mesh->tris);

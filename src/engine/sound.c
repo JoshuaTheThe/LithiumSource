@@ -14,8 +14,13 @@ size_t FindEmptySound(SCENE *Scene)
 
 size_t LoadSound(SCENE *Scene, const char *Path)
 {
+        size_t sz = strnlen(Path, 512) + strnlen(ProgramPath, 512) + 2;
+        char *FullPath = calloc(1, sz);
+        if (!FullPath)
+                TODO();
+        snprintf(FullPath, sz, "%s/%s", ProgramPath, Path);
         size_t idx = FindEmptySound(Scene);
-        Scene->Sounds[idx].Sample = Mix_LoadWAV(Path);
+        Scene->Sounds[idx].Sample = Mix_LoadWAV(FullPath);
         Scene->Sounds[idx].Valid = true;
         Scene->Sounds[idx].Playing = false;
         Scene->Sounds[idx].Channel = -1;
@@ -25,6 +30,7 @@ size_t LoadSound(SCENE *Scene, const char *Path)
                 TODO();
         }
 
+        free(FullPath);
         return idx;
 }
 
