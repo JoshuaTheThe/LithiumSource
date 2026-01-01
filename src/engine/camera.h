@@ -20,5 +20,6 @@
 
 size_t DrawObject(Mesh3D *Cube, SCENE *Scene);
 void InitProjectionMat(SCENE *Scene);
+size_t DrawScene(SCENE *Scene);
 
 #endif

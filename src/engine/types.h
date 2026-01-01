@@ -12,6 +12,21 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define da_append(xs, x)                                                                           \
+        do                                                                                         \
+        {                                                                                          \
+                if ((xs)->count >= (xs)->capacity)                                                 \
+                {                                                                                  \
+                        if ((xs)->capacity == 0)                                                   \
+                                (xs)->capacity = 256;                                              \
+                        else                                                                       \
+                                (xs)->capacity *= 2;                                               \
+                        (xs)->items = realloc((xs)->items, (xs)->capacity * sizeof(*(xs)->items)); \
+                }                                                                                  \
+                                                                                                   \
+                (xs)->items[(xs)->count++] = (x);                                                  \
+        } while (0)
+
 typedef char KEYMAP[256];
 
 typedef struct
@@ -83,12 +98,11 @@ typedef struct
 
 typedef struct
 {
-        Mix_Chunk* Sample;
+        Mix_Chunk *Sample;
         int Channel;
         bool Valid;
         bool Playing;
 } SOUND;
-
 
 typedef struct SCENE
 {
@@ -99,6 +113,8 @@ typedef struct SCENE
         WINDOW_SDL Window;
         COLOUR CurrentColor;
         char padd[4];
+        Mesh3D **items;
+        size_t count, capacity;
         size_t new, old;
         double dt;
         double footstep_timer;
@@ -120,37 +136,37 @@ static inline float Clamp(float v, float min, float max)
         return v;
 }
 
-static inline VEC3 AddVec3(VEC3 *a, VEC3 *b)
+static inline VEC3 AddVec3(const VEC3 * const a, const VEC3 * const b)
 {
         return (VEC3){a->X + b->X, a->Y + b->Y, a->Z + b->Z};
 }
 
-static inline VEC3 SubVec3(VEC3 *a, VEC3 *b)
+static inline VEC3 SubVec3(const VEC3 * const a, const VEC3 * const b)
 {
         return (VEC3){a->X - b->X, a->Y - b->Y, a->Z - b->Z};
 }
 
-static inline VEC3 ScaleVec3Mul(VEC3 *a, double s)
+static inline VEC3 ScaleVec3Mul(const VEC3 * const a, double s)
 {
         return (VEC3){a->X * s, a->Y * s, a->Z * s};
 }
 
-static inline VEC3 ScaleVec3Div(VEC3 *a, double s)
+static inline VEC3 ScaleVec3Div(const VEC3 * const a, double s)
 {
         return (VEC3){a->X / s, a->Y / s, a->Z / s};
 }
 
-static inline double DotVec3(VEC3 *a, VEC3 *b)
+static inline double DotVec3(const VEC3 * const a, const VEC3 * const b)
 {
         return a->X * b->X + a->Y * b->Y + a->Z * b->Z;
 }
 
-static inline double LenVec3(VEC3 *x)
+static inline double LenVec3(const VEC3 * const x)
 {
         return sqrt(DotVec3(x, x));
 }
 
-static inline VEC3 NormaliseVec3(VEC3 *a)
+static inline VEC3 NormaliseVec3(const VEC3 * const a)
 {
         double l = LenVec3(a);
         if (l == 0.0)
@@ -160,7 +176,7 @@ static inline VEC3 NormaliseVec3(VEC3 *a)
         return (VEC3){a->X / l, a->Y / l, a->Z / l};
 }
 
-static inline VEC3 CrossProdVec3(VEC3 *a, VEC3 *b)
+static inline VEC3 CrossProdVec3(const VEC3 * const a, const VEC3 * const b)
 {
         VEC3 v;
         v.X = a->Y * b->Z - a->Z * b->Y;

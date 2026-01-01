@@ -51,10 +51,15 @@ int main(int Count, char **Arguments)
         SDL_RenderSetLogicalSize(Scene->Renderer.Renderer, width, height);
         Scene->Renderer.RendererHeight /= scale;
         Scene->Renderer.RendererWidth /= scale;
-        Mesh3D *Mesh = InitMesh(0);
+
+        Mesh3D *Mesh = InitMesh(0);        
         LoadMeshFromFile("assets/c1a0.obj", Mesh);
         ScaleMesh(Mesh, 0.1);
-        Mesh->origin.X = 0;
+        da_append(Scene, Mesh);
+
+        Mesh = InitMesh(0);
+        LoadMeshFromFile("assets/mon guy.obj", Mesh);
+        da_append(Scene, Mesh);
 
         size_t jumpidx = LoadSound(Scene, "assets/jump.wav");
         size_t walkidxs[4];
@@ -185,7 +190,7 @@ int main(int Count, char **Arguments)
                 UpdateSounds(Scene);
                 SDL_SetRenderDrawColor(Scene->Renderer.Renderer, 0, 0, 0, 255);
                 SDL_RenderClear(Scene->Renderer.Renderer);
-                DrawObject(Mesh, Scene);
+                DrawScene(Scene);
                 SDL_RenderPresent(Scene->Renderer.Renderer);
 
                 Scene->new = SDL_GetTicks();
@@ -194,7 +199,6 @@ int main(int Count, char **Arguments)
         }
 
         SceneEnd(NULL, true);
-        DelMesh(Mesh);
         free(ProgramPath);
 end:
         (void)Count, (void)Arguments;

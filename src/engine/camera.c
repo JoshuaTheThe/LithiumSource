@@ -278,9 +278,9 @@ static COLOUR GetCol(COLOUR col, double lum)
 
         double mappedLum = (lum + 1) / 2.0;
 
-        int R = col.r;//(int)(256.0 * (mappedLum * ((double)col.r / 256.0)));
-        int G = col.g;//(int)(256.0 * (mappedLum * ((double)col.g / 256.0)));
-        int B = col.b;//(int)(256.0 * (mappedLum * ((double)col.b / 256.0)));
+        int R = col.r; //(int)(256.0 * (mappedLum * ((double)col.r / 256.0)));
+        int G = col.g; //(int)(256.0 * (mappedLum * ((double)col.g / 256.0)));
+        int B = col.b; //(int)(256.0 * (mappedLum * ((double)col.b / 256.0)));
 
         return (COLOUR){R, G, B};
 }
@@ -410,8 +410,8 @@ static int ProcessViewTriangle(
                 nrm = NormaliseVec3(&nrm);
 
                 VEC3 viewDir = {0, 0, 1};
-                //if (DotVec3(&nrm, &viewDir) <= 0)
-                //        continue;
+                // if (DotVec3(&nrm, &viewDir) <= 0)
+                //         continue;
 
                 VEC3 light = {0, 0.4, 1};
                 light = NormaliseVec3(&light);
@@ -558,6 +558,168 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                 for (int k = 0; k < count; k++)
                 {
                         TrisToDraw[trisDrawn++] = out[k];
+                }
+        }
+
+        if (trisDrawn > 1)
+        {
+                qsort(TrisToDraw, trisDrawn, sizeof(TRI3D), CompareTriangles);
+        }
+
+        for (size_t i = 0; i < trisDrawn; ++i)
+        {
+                TRI3D *triToDraw = &TrisToDraw[i];
+
+                // int valid = 1;
+                // for (int j = 0; j < 3; ++j)
+                //{
+                //         if (triToDraw->p[j].X < 2 * -Scene->Renderer.RendererWidth || triToDraw->p[j].X > 2 * Scene->Renderer.RendererWidth ||
+                //             triToDraw->p[j].Y < 2 * -Scene->Renderer.RendererHeight || triToDraw->p[j].Y > 2 * Scene->Renderer.RendererHeight)
+                //         {
+                //                 valid = 0;
+                //                 break;
+                //         }
+                // }
+                // if (!valid)
+                //         continue;
+
+                if (WIRE_FRAME)
+                {
+                        DrawTriWire(Scene,
+                                    (int)triToDraw->p[0].X, (int)triToDraw->p[0].Y,
+                                    (int)triToDraw->p[1].X, (int)triToDraw->p[1].Y,
+                                    (int)triToDraw->p[2].X, (int)triToDraw->p[2].Y,
+                                    triToDraw->col.r, triToDraw->col.g, triToDraw->col.b);
+                }
+                else
+                {
+                        DrawTri(Scene,
+                                (int)triToDraw->p[0].X, (int)triToDraw->p[0].Y,
+                                (int)triToDraw->p[1].X, (int)triToDraw->p[1].Y,
+                                (int)triToDraw->p[2].X, (int)triToDraw->p[2].Y,
+                                triToDraw->col.r, triToDraw->col.g, triToDraw->col.b);
+                }
+        }
+
+        free(TrisToDraw);
+        return elapsedTime1;
+}
+
+size_t DrawScene(SCENE *Scene)
+{
+        static size_t elapsedTime1 = 0;
+        static size_t elapsedTime0 = 0;
+
+        elapsedTime0 = elapsedTime1;
+        elapsedTime1 = SDL_GetTicks();
+
+        double elapsedTime = (elapsedTime1 - elapsedTime0) / (1000.0 / TIME_SCALE);
+        if (elapsedTime0 == elapsedTime1)
+        {
+                elapsedTime = 0.0;
+        }
+
+        (void)elapsedTime;
+        size_t tri_count = 0;
+        double yaw = DEG_TO_RAD(Scene->Camera.Rotation.Y);
+        double pitch = DEG_TO_RAD(Scene->Camera.Rotation.X);
+
+        const VEC3 cameraForwardUn = {
+            sin(yaw) * cos(pitch),
+            sin(pitch),
+            cos(yaw) * cos(pitch)};
+        const VEC3 cameraForward = NormaliseVec3(&cameraForwardUn);
+        const VEC3 worldUp = {0.0, 1.0, 0.0};
+        const VEC3 cameraRightUn = CrossProdVec3(&worldUp, &cameraForward);
+        const VEC3 cameraRight = NormaliseVec3(&cameraRightUn);
+        const VEC3 cameraUp = CrossProdVec3(&cameraForward, &cameraRight);
+
+        if (pitch > DEG_TO_RAD(89.0f))
+                pitch = DEG_TO_RAD(89.0f);
+        if (pitch < DEG_TO_RAD(-89.0f))
+                pitch = DEG_TO_RAD(-89.0f);
+
+        for (size_t i = 0; i < Scene->count; ++i)
+        {
+                tri_count += Scene->items[i]->tri_count;
+        }
+
+        TRI3D *TrisToDraw = calloc(tri_count * 2, sizeof(TRI3D));
+        size_t trisDrawn = 0;
+        if (!TrisToDraw)
+        {
+                fprintf(stderr, "Failed to allocate memory for triangles\n");
+                return elapsedTime1;
+        }
+
+        for (size_t i = 0; i < Scene->count; ++i)
+        {
+                Mesh3D *Mesh = Scene->items[i];
+                Mat4x4 RotMatrixX = MakeRotationX(DEG_TO_RAD(Mesh->ROTX));
+                Mat4x4 RotMatrixY = MakeRotationY(DEG_TO_RAD(Mesh->ROTY));
+                Mat4x4 RotMatrixZ = MakeRotationZ(DEG_TO_RAD(Mesh->ROTZ));
+
+                Mat4x4 ObjectRotation = MulMatMat(&RotMatrixY, &RotMatrixX);
+                ObjectRotation = MulMatMat(&ObjectRotation, &RotMatrixZ);
+                Mat4x4 ObjectTranslation = MakeTransMat(
+                    Mesh->origin.X,
+                    Mesh->origin.Y,
+                    Mesh->origin.Z);
+
+                Mat4x4 ScaleMatrix = MakeScaleMat(
+                    Mesh->Scale.X,
+                    Mesh->Scale.Y,
+                    Mesh->Scale.Z);
+
+                Mat4x4 WorldMatrix = MulMatMat(&ScaleMatrix, &ObjectRotation);
+                WorldMatrix = MulMatMat(&WorldMatrix, &ObjectTranslation);
+
+                Mat4x4 ViewMatrix = {0};
+
+                ViewMatrix.m[0][0] = cameraRight.X;
+                ViewMatrix.m[1][0] = cameraRight.Y;
+                ViewMatrix.m[2][0] = cameraRight.Z;
+
+                ViewMatrix.m[0][1] = cameraUp.X;
+                ViewMatrix.m[1][1] = cameraUp.Y;
+                ViewMatrix.m[2][1] = cameraUp.Z;
+
+                ViewMatrix.m[0][2] = cameraForward.X;
+                ViewMatrix.m[1][2] = cameraForward.Y;
+                ViewMatrix.m[2][2] = cameraForward.Z;
+
+                ViewMatrix.m[3][3] = 1.0;
+
+                ViewMatrix.m[3][0] = -DotVec3(&cameraRight, &Scene->Camera.Position);
+                ViewMatrix.m[3][1] = -DotVec3(&cameraUp, &Scene->Camera.Position);
+                ViewMatrix.m[3][2] = -DotVec3(&cameraForward, &Scene->Camera.Position);
+
+                Mat4x4 WorldViewMatrix = MulMatMat(&WorldMatrix, &ViewMatrix);
+
+                for (size_t i = 0; i < Mesh->tri_count; ++i)
+                {
+                        TRI3D tri, triTransformed, triProjected;
+
+                        tri = Mesh->tris[i];
+                        triTransformed = tri;
+
+                        MulMatVec(&tri.p[0], &triTransformed.p[0], &WorldViewMatrix);
+                        MulMatVec(&tri.p[1], &triTransformed.p[1], &WorldViewMatrix);
+                        MulMatVec(&tri.p[2], &triTransformed.p[2], &WorldViewMatrix);
+
+                        TRI3D clipped[2];
+                        int n = ClipTriangleNearPlane(&triTransformed,
+                                                      &clipped[0],
+                                                      &clipped[1],
+                                                      Scene->Camera.Near);
+
+                        TRI3D out[2];
+                        int count = ProcessViewTriangle(&triTransformed, out, Scene);
+
+                        for (int k = 0; k < count; k++)
+                        {
+                                TrisToDraw[trisDrawn++] = out[k];
+                        }
                 }
         }
 

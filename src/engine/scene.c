@@ -2,6 +2,7 @@
 #include <engine/draw.h>
 #include <engine/sound.h>
 #include <engine/camera.h>
+#include <engine/mesh.h>
 #include <todo.h>
 
 static bool initialised = false;
@@ -94,10 +95,25 @@ void SceneTick(SCENE **Scene)
         }
 }
 
+void SceneClear(SCENE *Scene)
+{
+        for (size_t i = 0; i < Scene->count; ++i)
+        {
+                DelMesh(Scene->items[i]);
+        }
+
+        free(Scene->items);
+        Scene->items = NULL;
+        Scene->capacity = 0;
+        Scene->count = 0;
+}
+
 void SceneEnd(SCENE *Scene, bool Final)
 {
         if (Scene)
         {
+                if (Scene->capacity)
+                        SceneClear(Scene);
                 SDL_DestroyRenderer(Scene->Renderer.Renderer);
                 SDL_DestroyWindow(Scene->Window.Window);
                 free(Scene);
