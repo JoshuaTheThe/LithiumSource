@@ -43,15 +43,15 @@ SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
         Scene->CurrentColor.g = 255;
         Scene->CurrentColor.b = 255;
 
-        Scene->Camera.FOV = 90;
-        Scene->Camera.Aspect = H / W;
+        Scene->Camera.FOV = 100;
+        Scene->Camera.Aspect = (double)W / (double)H;
         Scene->Camera.Position.X = 0.0;
         Scene->Camera.Position.Y = 0.0;
         Scene->Camera.Position.Z = 0.0;
         Scene->Camera.Rotation.X = 0.0;
         Scene->Camera.Rotation.Y = 0.0;
         Scene->Camera.Rotation.Z = 0.0;
-        Scene->Camera.Near = 0.1;
+        Scene->Camera.Near = 1.0;
         Scene->Camera.Far = 1000.0;
         return Scene;
 }
@@ -68,11 +68,15 @@ void SceneTick(SCENE **Scene)
                 case SDL_MOUSEMOTION:
                         break;
                 case SDL_KEYDOWN:
-                        (*Scene)->Keymap[e.key.keysym.sym] = true;
-                        printf("%c", (*Scene)->Keymap[e.key.keysym.sym]);
+                        if (e.key.keysym.sym < 255)
+                        {
+                                (*Scene)->Keymap[e.key.keysym.sym] = true;
+                                printf("%c", (*Scene)->Keymap[e.key.keysym.sym]);
+                        }
                         break;
                 case SDL_KEYUP:
-                        (*Scene)->Keymap[e.key.keysym.sym] = false;
+                        if (e.key.keysym.sym < 255)
+                                (*Scene)->Keymap[e.key.keysym.sym] = false;
                         break;
                 case SDL_QUIT:
                         SceneEnd(*Scene, false);

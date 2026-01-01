@@ -24,10 +24,18 @@ typedef struct
         uint32_t r, g, b;
 } COLOUR;
 
+typedef enum
+{
+        AXIS_X,
+        AXIS_Y,
+        AXIS_Z
+} AXIS;
+
 typedef struct
 {
         VEC3 p[3];
         COLOUR col;
+        double Depth;
         bool invalid;
 } TRI3D;
 
@@ -81,11 +89,70 @@ typedef struct SCENE
         char padd[4];
         size_t new, old;
         float dt;
+        bool Grounded;
 } SCENE;
 
 typedef struct
 {
         double m[4][4];
 } MATRIX4x4;
+
+static inline float Clamp(float v, float min, float max)
+{
+        if (v < min)
+                return min;
+        if (v > max)
+                return max;
+        return v;
+}
+
+static inline VEC3 AddVec3(VEC3 *a, VEC3 *b)
+{
+        return (VEC3){a->X + b->X, a->Y + b->Y, a->Z + b->Z};
+}
+
+static inline VEC3 SubVec3(VEC3 *a, VEC3 *b)
+{
+        return (VEC3){a->X - b->X, a->Y - b->Y, a->Z - b->Z};
+}
+
+static inline VEC3 ScaleVec3Mul(VEC3 *a, double s)
+{
+        return (VEC3){a->X * s, a->Y * s, a->Z * s};
+}
+
+static inline VEC3 ScaleVec3Div(VEC3 *a, double s)
+{
+        return (VEC3){a->X / s, a->Y / s, a->Z / s};
+}
+
+static inline double DotVec3(VEC3 *a, VEC3 *b)
+{
+        return a->X * b->X + a->Y * b->Y + a->Z * b->Z;
+}
+
+static inline double LenVec3(VEC3 *x)
+{
+        return sqrt(DotVec3(x, x));
+}
+
+static inline VEC3 NormaliseVec3(VEC3 *a)
+{
+        double l = LenVec3(a);
+        if (l == 0.0)
+        {
+                return (VEC3){0};
+        }
+        return (VEC3){a->X / l, a->Y / l, a->Z / l};
+}
+
+static inline VEC3 CrossProdVec3(VEC3 *a, VEC3 *b)
+{
+        VEC3 v;
+        v.X = a->Y * b->Z - a->Z * b->Y;
+        v.Y = a->Z * b->X - a->X * b->Z;
+        v.Z = a->X * b->Y - a->Y * b->X;
+        return v;
+}
 
 #endif

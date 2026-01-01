@@ -18,7 +18,7 @@ void DelMesh(Mesh3D *mesh)
         free(mesh);
 }
 
-bool PlayerCollides(SCENE *Scene, TRI3D *Tri)
+bool PlayerCollides(SCENE *Scene, TRI3D *Tri, VEC3 Origin)
 {
         if (!Scene || !Tri)
                 return false;
@@ -54,14 +54,14 @@ bool PlayerCollides(SCENE *Scene, TRI3D *Tri)
                         tri_bounds.Max.Z = Tri->p[i].Z;
         }
 
-        bool x_overlap = (player_bounds.Max.X >= tri_bounds.Min.X) &&
-                         (player_bounds.Min.X <= tri_bounds.Max.X);
+        bool x_overlap = (player_bounds.Max.X >= tri_bounds.Min.X + Origin.X) &&
+                         (player_bounds.Min.X <= tri_bounds.Max.X + Origin.X);
 
-        bool y_overlap = (player_bounds.Max.Y >= tri_bounds.Min.Y) &&
-                         (player_bounds.Min.Y <= tri_bounds.Max.Y);
+        bool y_overlap = (player_bounds.Max.Y >= tri_bounds.Min.Y + Origin.Y) &&
+                         (player_bounds.Min.Y <= tri_bounds.Max.Y + Origin.Y);
 
-        bool z_overlap = (player_bounds.Max.Z >= tri_bounds.Min.Z) &&
-                         (player_bounds.Min.Z <= tri_bounds.Max.Z);
+        bool z_overlap = (player_bounds.Max.Z >= tri_bounds.Min.Z + Origin.Z) &&
+                         (player_bounds.Min.Z <= tri_bounds.Max.Z + Origin.Z);
 
         return (x_overlap && y_overlap && z_overlap);
 }
@@ -137,4 +137,17 @@ bool LoadMeshFromFile(const char *fileName, Mesh3D *mesh)
         fclose(fp);
 
         return true;
+}
+
+void ScaleMesh(Mesh3D *Mesh, double s)
+{
+        for (size_t x = 0; x < Mesh->tri_count; ++x)
+        {
+                for (size_t y = 0; y < 3; ++y)
+                {
+                        Mesh->tris[x].p[y].X *= s;
+                        Mesh->tris[x].p[y].Y *= s;
+                        Mesh->tris[x].p[y].Z *= s;
+                }
+        }
 }

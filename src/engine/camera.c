@@ -27,51 +27,6 @@ void SDL_SWAP(int *a, int *b)
         *(b) = temp;
 }
 
-VEC3 AddVec3(VEC3 *a, VEC3 *b)
-{
-        return (VEC3){a->X + b->X, a->Y + b->Y, a->Z + b->Z};
-}
-
-VEC3 SubVec3(VEC3 *a, VEC3 *b)
-{
-        return (VEC3){a->X - b->X, a->Y - b->Y, a->Z - b->Z};
-}
-
-VEC3 ScaleVec3Mul(VEC3 *a, double s)
-{
-        return (VEC3){a->X * s, a->Y * s, a->Z * s};
-}
-
-VEC3 ScaleVec3Div(VEC3 *a, double s)
-{
-        return (VEC3){a->X / s, a->Y / s, a->Z / s};
-}
-
-double DotVec3(VEC3 *a, VEC3 *b)
-{
-        return a->X * b->X + a->Y * b->Y + a->Z * b->Z;
-}
-
-double LenVec3(VEC3 *x)
-{
-        return sqrt(DotVec3(x, x));
-}
-
-VEC3 NormaliseVec3(VEC3 *a)
-{
-        double l = LenVec3(a);
-        return (VEC3){a->X / l, a->Y / l, a->Z / l};
-}
-
-VEC3 CrossProdVec3(VEC3 *a, VEC3 *b)
-{
-        VEC3 v;
-        v.X = a->Y * b->Z - a->Z * b->Y;
-        v.Y = a->Z * b->X - a->X * b->Z;
-        v.Z = a->X * b->Y - a->Y * b->X;
-        return v;
-}
-
 void MulMatVec(VEC3 *i, VEC3 *o, Mat4x4 *m)
 {
         o->X = i->X * m->m[0][0] + i->Y * m->m[1][0] + i->Z * m->m[2][0] + m->m[3][0];
@@ -160,7 +115,7 @@ Mat4x4 MakeProjMat(SCENE *Scene)
 {
         Mat4x4 mat = {0};
 
-        double fAspectRatio = (double)Scene->Renderer.RendererHeight / (double)Scene->Renderer.RendererWidth;
+        double fAspectRatio = (double)Scene->Renderer.RendererWidth / (double)Scene->Renderer.RendererHeight;
         double fFovRad = 1.0 / tan(Scene->Camera.FOV * 0.5f / 180.0 * M_PI);
         double far = Scene->Camera.Far;
         double near = Scene->Camera.Near;
@@ -246,8 +201,8 @@ static Mat4x4 InvertViewMatrix(const Mat4x4 *mat)
 
 void InitProjectionMat(SCENE *Scene)
 {
-        double fAspectRatio = (double)Scene->Renderer.RendererHeight / (double)Scene->Renderer.RendererWidth;
-        double fFovRad = 1.0 / tan(Scene->Camera.FOV * 0.5f / 180.0 * M_PI);
+        double fAspectRatio = (double)Scene->Renderer.RendererWidth / (double)Scene->Renderer.RendererHeight;
+        double fFovRad = 1.0 / tan(Scene->Camera.FOV * 0.5 / 180.0 * M_PI);
         double far = Scene->Camera.Far;
         double near = Scene->Camera.Near;
 
@@ -288,46 +243,18 @@ static int interpolateX(int y1, int y2, int x1, int x2, int y)
 static void DrawTri(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b)
 {
         sortVertices(&y0, &y1, &y2, &x0, &x1, &x2);
+        SDL_Rect originalClip;
+        SDL_RenderGetClipRect(Scene->Renderer.Renderer, &originalClip);
+        SDL_Rect screenRect = {0, 0, Scene->Renderer.RendererWidth, Scene->Renderer.RendererHeight};
+        SDL_RenderSetClipRect(Scene->Renderer.Renderer, &screenRect);
         SDL_SetRenderDrawColor(Scene->Renderer.Renderer, r, g, b, 255);
         SDL_Vertex Verts[] = {
-                { .position={ x0, y0 }, .color.r=r, .color.g=g, .color.b=b, .color.a=255, .tex_coord={0} },
-                { .position={ x1, y1 }, .color.r=r, .color.g=g, .color.b=b, .color.a=255, .tex_coord={0} },
-                { .position={ x2, y2 }, .color.r=r, .color.g=g, .color.b=b, .color.a=255, .tex_coord={0} },
+            {.position = {x0, y0}, .color = {r, g, b, 255}, .tex_coord = {0, 0}},
+            {.position = {x1, y1}, .color = {r, g, b, 255}, .tex_coord = {0, 0}},
+            {.position = {x2, y2}, .color = {r, g, b, 255}, .tex_coord = {0, 0}},
         };
-        SDL_RenderGeometry(Scene->Renderer.Renderer, NULL, Verts, sizeof(Verts), NULL, 0);
-        //for (int y = y0; y <= y2; ++y)
-        //{
-        //        int xLeft, xRight;
-//
-        //        if (y < y1)
-        //        {
-        //                xLeft = interpolateX(y0, y2, x0, x2, y);
-        //                xRight = interpolateX(y0, y1, x0, x1, y);
-        //        }
-        //        else
-        //        {
-        //                xLeft = interpolateX(y1, y2, x1, x2, y);
-        //                xRight = interpolateX(y0, y2, x0, x2, y);
-        //        }
-//
-        //        if (xLeft > xRight)
-        //        {
-        //                SDL_SWAP(&xLeft, &xRight);
-        //        }
-//
-        //        if (xLeft <= xRight)
-        //        {
-        //                if (xLeft < 0)
-        //                        xLeft = 0;
-        //                if (xRight >= Scene->Renderer.RendererWidth)
-        //                        xRight = Scene->Renderer.RendererWidth - 1;
-//
-        //                if (xLeft <= xRight)
-        //                {
-        //                        SDL_RenderDrawLine(Scene->Renderer.Renderer, xLeft, y, xRight, y);
-        //                }
-        //        }
-        //}
+        SDL_RenderGeometry(Scene->Renderer.Renderer, NULL, Verts, 3, NULL, 0);
+        SDL_RenderSetClipRect(Scene->Renderer.Renderer, &originalClip);
 }
 
 static void DrawTriWire(SCENE *Scene, int x0, int y0, int x1, int y1, int x2, int y2, int r, int g, int b)
@@ -351,9 +278,9 @@ static COLOUR GetCol(COLOUR col, double lum)
 
         double mappedLum = (lum + 1) / 2.0;
 
-        int R = (int)(255 * mappedLum + col.r);
-        int G = (int)(255 * mappedLum + col.g);
-        int B = (int)(255 * mappedLum + col.b);
+        int R = col.r;//(int)(256.0 * (mappedLum * ((double)col.r / 256.0)));
+        int G = col.g;//(int)(256.0 * (mappedLum * ((double)col.g / 256.0)));
+        int B = col.b;//(int)(256.0 * (mappedLum * ((double)col.b / 256.0)));
 
         return (COLOUR){R, G, B};
 }
@@ -367,16 +294,159 @@ static int CompareTriangles(const void *a, const void *b)
 {
         const TRI3D *triA = (const TRI3D *)a;
         const TRI3D *triB = (const TRI3D *)b;
-        double depthA = GetTriangleDepth(triA);
-        double depthB = GetTriangleDepth(triB);
 
         // Sort in descending order (furthest first)
-        if (depthA > depthB)
+        if (triA->Depth > triB->Depth)
                 return -1;
-        else if (depthA < depthB)
+        else if (triA->Depth < triB->Depth)
                 return 1;
         else
                 return 0;
+}
+
+static VEC3 IntersectPlane(
+    VEC3 *planePoint,
+    VEC3 *planeNormal,
+    VEC3 *lineStart,
+    VEC3 *lineEnd)
+{
+        planeNormal = &(VEC3){
+            planeNormal->X / LenVec3(planeNormal),
+            planeNormal->Y / LenVec3(planeNormal),
+            planeNormal->Z / LenVec3(planeNormal)};
+
+        double plane_d = -DotVec3(planeNormal, planePoint);
+        double ad = DotVec3(lineStart, planeNormal);
+        double bd = DotVec3(lineEnd, planeNormal);
+        double t = (-plane_d - ad) / (bd - ad);
+
+        VEC3 lineStartToEnd = SubVec3(lineEnd, lineStart);
+        VEC3 lineToIntersect = ScaleVec3Mul(&lineStartToEnd, t);
+        return AddVec3(lineStart, &lineToIntersect);
+}
+
+static int ClipTriangleNearPlane(
+    TRI3D *in,
+    TRI3D *out1,
+    TRI3D *out2,
+    double near)
+{
+        VEC3 planePoint = {0, 0, near};
+        VEC3 planeNormal = {0, 0, 1};
+
+        VEC3 *inside[3];
+        VEC3 *outside[3];
+        int nInside = 0, nOutside = 0;
+
+        for (int i = 0; i < 3; i++)
+        {
+                if (in->p[i].Z >= near)
+                        inside[nInside++] = &in->p[i];
+                else
+                        outside[nOutside++] = &in->p[i];
+        }
+
+        if (nInside == 0)
+                return 0;
+
+        if (nInside == 3)
+        {
+                *out1 = *in;
+                return 1;
+        }
+
+        if (nInside == 1 && nOutside == 2)
+        {
+                out1->p[0] = *inside[0];
+                out1->p[1] = IntersectPlane(&planePoint, &planeNormal, inside[0], outside[0]);
+                out1->p[2] = IntersectPlane(&planePoint, &planeNormal, inside[0], outside[1]);
+                out1->col = in->col;
+                return 1;
+        }
+
+        if (nInside == 2 && nOutside == 1)
+        {
+                out1->p[0] = *inside[0];
+                out1->p[1] = *inside[1];
+                out1->p[2] = IntersectPlane(&planePoint, &planeNormal, inside[0], outside[0]);
+
+                out2->p[0] = *inside[1];
+                out2->p[1] = out1->p[2];
+                out2->p[2] = IntersectPlane(&planePoint, &planeNormal, inside[1], outside[0]);
+
+                out1->col = out2->col = in->col;
+                return 2;
+        }
+
+        return 0;
+}
+
+static int ProcessViewTriangle(
+    const TRI3D *triView,
+    TRI3D *out,
+    SCENE *Scene)
+{
+        TRI3D clipped[2];
+        int n = ClipTriangleNearPlane(
+            (TRI3D *)triView,
+            &clipped[0],
+            &clipped[1],
+            Scene->Camera.Near);
+
+        int outCount = 0;
+
+        for (int t = 0; t < n; t++)
+        {
+                TRI3D *triClip = &clipped[t];
+                TRI3D triProj;
+
+                VEC3 l1 = SubVec3(&triClip->p[1], &triClip->p[0]);
+                VEC3 l2 = SubVec3(&triClip->p[2], &triClip->p[0]);
+                VEC3 nrm = CrossProdVec3(&l1, &l2);
+
+                if (LenVec3(&nrm) < 1e-6)
+                        continue;
+
+                nrm = NormaliseVec3(&nrm);
+
+                VEC3 viewDir = {0, 0, 1};
+                //if (DotVec3(&nrm, &viewDir) <= 0)
+                //        continue;
+
+                VEC3 light = {0, 0.4, 1};
+                light = NormaliseVec3(&light);
+
+                double dp = DotVec3(&nrm, &light);
+                if (dp < 0)
+                        dp = 0;
+
+                triProj.col = GetCol(triView->col, dp);
+
+                triProj.Depth =
+                    (triClip->p[0].Z +
+                     triClip->p[1].Z +
+                     triClip->p[2].Z) /
+                    3.0;
+
+                for (int i = 0; i < 3; i++)
+                {
+                        MulMatVec(&triClip->p[i],
+                                  &triProj.p[i],
+                                  &ProjectionMatrix);
+
+                        triProj.p[i].X =
+                            (triProj.p[i].X + 1) * 0.5 *
+                            Scene->Renderer.RendererWidth;
+
+                        triProj.p[i].Y =
+                            (1 - triProj.p[i].Y) * 0.5 *
+                            Scene->Renderer.RendererHeight;
+                }
+
+                out[outCount++] = triProj;
+        }
+
+        return outCount;
 }
 
 size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
@@ -414,36 +484,49 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
         Mat4x4 WorldMatrix = MulMatMat(&ScaleMatrix, &ObjectRotation);
         WorldMatrix = MulMatMat(&WorldMatrix, &ObjectTranslation);
 
-        float cameraYaw = Scene->Camera.Rotation.Y;
-        float cameraPitch = Scene->Camera.Rotation.X;
+        float yaw = DEG_TO_RAD(Scene->Camera.Rotation.Y);
+        float pitch = DEG_TO_RAD(Scene->Camera.Rotation.X);
 
-        if (cameraPitch > 89.0f)
-                cameraPitch = 89.0f;
-        if (cameraPitch < -89.0f)
-                cameraPitch = -89.0f;
+        if (pitch > DEG_TO_RAD(89.0f))
+                pitch = DEG_TO_RAD(89.0f);
+        if (pitch < DEG_TO_RAD(-89.0f))
+                pitch = DEG_TO_RAD(-89.0f);
 
-        Mat4x4 RotMatrixYaw = MakeRotationY(DEG_TO_RAD(cameraYaw));
-        Mat4x4 RotMatrixPitch = MakeRotationX(DEG_TO_RAD(cameraPitch));
+        VEC3 cameraForward = {
+            sin(yaw) * cos(pitch),
+            sin(pitch),
+            cos(yaw) * cos(pitch)};
 
-        Mat4x4 CameraRotation = MulMatMat(&RotMatrixPitch, &RotMatrixYaw);
+        cameraForward = NormaliseVec3(&cameraForward);
 
-        Mat4x4 CameraTranslation = MakeTransMat(
-            Scene->Camera.Position.X,
-            Scene->Camera.Position.Y,
-            Scene->Camera.Position.Z);
+        VEC3 worldUp = {0.0, 1.0, 0.0};
+        VEC3 cameraRight = CrossProdVec3(&worldUp, &cameraForward);
+        cameraRight = NormaliseVec3(&cameraRight);
+        VEC3 cameraUp = CrossProdVec3(&cameraForward, &cameraRight);
 
-        Mat4x4 InvCameraRotation = TransposeMat(&CameraRotation);
+        Mat4x4 ViewMatrix = {0};
 
-        Mat4x4 InvCameraTranslation = MakeTransMat(
-            -Scene->Camera.Position.X,
-            -Scene->Camera.Position.Y,
-            -Scene->Camera.Position.Z);
+        ViewMatrix.m[0][0] = cameraRight.X;
+        ViewMatrix.m[1][0] = cameraRight.Y;
+        ViewMatrix.m[2][0] = cameraRight.Z;
 
-        Mat4x4 ViewMatrix = MulMatMat(&InvCameraTranslation, &InvCameraRotation);
+        ViewMatrix.m[0][1] = cameraUp.X;
+        ViewMatrix.m[1][1] = cameraUp.Y;
+        ViewMatrix.m[2][1] = cameraUp.Z;
+
+        ViewMatrix.m[0][2] = cameraForward.X;
+        ViewMatrix.m[1][2] = cameraForward.Y;
+        ViewMatrix.m[2][2] = cameraForward.Z;
+
+        ViewMatrix.m[3][3] = 1.0;
+
+        ViewMatrix.m[3][0] = -DotVec3(&cameraRight, &Scene->Camera.Position);
+        ViewMatrix.m[3][1] = -DotVec3(&cameraUp, &Scene->Camera.Position);
+        ViewMatrix.m[3][2] = -DotVec3(&cameraForward, &Scene->Camera.Position);
 
         Mat4x4 WorldViewMatrix = MulMatMat(&WorldMatrix, &ViewMatrix);
 
-        TRI3D *TrisToDraw = calloc(Cube->tri_count, sizeof(TRI3D));
+        TRI3D *TrisToDraw = calloc(Cube->tri_count * 4, sizeof(TRI3D));
         if (!TrisToDraw)
         {
                 fprintf(stderr, "Failed to allocate memory for triangles\n");
@@ -457,68 +540,25 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                 TRI3D tri, triTransformed, triProjected;
 
                 tri = Cube->tris[i];
+                triTransformed = tri;
 
                 MulMatVec(&tri.p[0], &triTransformed.p[0], &WorldViewMatrix);
                 MulMatVec(&tri.p[1], &triTransformed.p[1], &WorldViewMatrix);
                 MulMatVec(&tri.p[2], &triTransformed.p[2], &WorldViewMatrix);
 
-                int verticesBehind = 0;
-                for (int j = 0; j < 3; ++j)
+                TRI3D clipped[2];
+                int n = ClipTriangleNearPlane(&triTransformed,
+                                              &clipped[0],
+                                              &clipped[1],
+                                              Scene->Camera.Near);
+
+                TRI3D out[2];
+                int count = ProcessViewTriangle(&triTransformed, out, Scene);
+
+                for (int k = 0; k < count; k++)
                 {
-                        if (triTransformed.p[j].Z < 0)
-                                verticesBehind++;
+                        TrisToDraw[trisDrawn++] = out[k];
                 }
-                //if (verticesBehind == 3)
-                //        continue;
-
-                VEC3 Normal, Line1, Line2;
-                Line1 = SubVec3(&triTransformed.p[1], &triTransformed.p[0]);
-                Line2 = SubVec3(&triTransformed.p[2], &triTransformed.p[0]);
-                Normal = CrossProdVec3(&Line1, &Line2);
-
-                double normalLength = LenVec3(&Normal);
-                //if (normalLength < Scene->Camera.Near)
-                //        continue;
-
-                NormaliseVec3(&Normal);
-
-                VEC3 cameraDir = {0.0, 0.0, -1.0};
-                // if (DotVec3(&Normal, &cameraDir) >= 0.0)
-                //         continue;
-
-                VEC3 LightDir = {0.0, 0.4, -1.0};
-                NormaliseVec3(&LightDir);
-                double dp = DotVec3(&Normal, &LightDir);
-                if (dp < 0.0)
-                        dp = 0.0;
-                COLOUR col = GetCol(tri.col, dp);
-                triProjected.col = col;
-
-                int verticesVisible = 0;
-                for (int j = 0; j < 3; ++j)
-                {
-                        double z = triTransformed.p[j].Z;
-                        if (z < Scene->Camera.Near)
-                                z = Scene->Camera.Near;
-
-                        double aspect = (double)Scene->Renderer.RendererWidth / Scene->Renderer.RendererHeight;
-                        double fovScale = 1.0 / tan(DEG_TO_RAD(Scene->Camera.FOV) * 0.5);
-
-                        triProjected.p[j].X = triTransformed.p[j].X * fovScale / z;
-                        triProjected.p[j].Y = triTransformed.p[j].Y * fovScale / z;
-                        triProjected.p[j].Z = z;
-
-                        triProjected.p[j].X = (triProjected.p[j].X + 1.0) * 0.5 * Scene->Renderer.RendererWidth;
-                        triProjected.p[j].Y = (1.0 - triProjected.p[j].Y) * 0.5 * Scene->Renderer.RendererHeight;
-
-                        verticesVisible++;
-                }
-
-                //if (verticesVisible == 0)
-                //        continue;
-
-                memcpy(&TrisToDraw[trisDrawn], &triProjected, sizeof(TRI3D));
-                trisDrawn++;
         }
 
         if (trisDrawn > 1)
@@ -530,7 +570,7 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
         {
                 TRI3D *triToDraw = &TrisToDraw[i];
 
-                int valid = 1;
+                // int valid = 1;
                 // for (int j = 0; j < 3; ++j)
                 //{
                 //         if (triToDraw->p[j].X < 2 * -Scene->Renderer.RendererWidth || triToDraw->p[j].X > 2 * Scene->Renderer.RendererWidth ||
@@ -540,8 +580,8 @@ size_t DrawObject(Mesh3D *Cube, SCENE *Scene)
                 //                 break;
                 //         }
                 // }
-                if (!valid)
-                        continue;
+                // if (!valid)
+                //         continue;
 
                 if (WIRE_FRAME)
                 {
