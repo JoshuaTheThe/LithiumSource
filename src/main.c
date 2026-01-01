@@ -19,9 +19,9 @@
 
 int main(int Count, char **Arguments)
 {
-        const int width = 800;
-        const int height = 600;
-        const int scale = 1;
+        const int width = 500;
+        const int height = 500;
+        const int scale = 2;
 
         int result = Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 512);
         if (result < 0)
@@ -51,7 +51,7 @@ int main(int Count, char **Arguments)
         Scene->Camera.Bounds.Min = (VEC3){.X = -1.0, .Y = -2.5, .Z = -1.0};
         Scene->Camera.Position.Y = 10.0;
         Scene->Camera.Velocity.Y = 0.1;
-        double speed = 0.04;
+        double speed = 0.1;
 
         int walk_cycle = 0;
 
