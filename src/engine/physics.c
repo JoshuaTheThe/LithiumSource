@@ -1,10 +1,10 @@
 #include <engine/physics.h>
 
 const double TERMINAL_VELOCITY = 100.0;
-const double GRAVITY = 0.0981;
-const double FRICTION = 0.8;
+const double GRAVITY = 9.81;
+const double FRICTION = 8.0;
 const double PHYSICS_WAIT = 1.0;
-const double JUMP_POWER = 5.0;
+const double JUMP_POWER = 1.0;
 
 static BOUNDS GetPlayerBounds(SCENE *Scene)
 {

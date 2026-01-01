@@ -1,5 +1,6 @@
 #include <engine/Scene.h>
 #include <engine/draw.h>
+#include <engine/sound.h>
 #include <engine/camera.h>
 #include <todo.h>
 
@@ -53,6 +54,10 @@ SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
         Scene->Camera.Rotation.Z = 0.0;
         Scene->Camera.Near = 1.0;
         Scene->Camera.Far = 1000.0;
+
+        Scene->footstep_interval = 0.3;
+        Scene->footstep_timer = 0.00;
+
         return Scene;
 }
 
@@ -79,6 +84,7 @@ void SceneTick(SCENE **Scene)
                                 (*Scene)->Keymap[e.key.keysym.sym] = false;
                         break;
                 case SDL_QUIT:
+                        CleanupSound(*Scene);
                         SceneEnd(*Scene, false);
                         (*Scene) = NULL;
                         return;

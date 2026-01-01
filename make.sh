@@ -32,7 +32,7 @@ list_files_recursive() {
             echo "Compiling $file -> $output_file"
             mkdir -p "$(dirname "$output_file")"
 
-            gcc -I./src -c "$file" -o "$output_file" -Wall -Wextra -s -fno-ident -fno-asynchronous-unwind-tables
+            gcc -I./src -c "$file" -o "$output_file" -Wall -Wextra -s -fno-ident -fno-asynchronous-unwind-tables -g0
             categorize_object_file "$output_file"
         elif [[ -f "$file" && "$file" == *.s ]]; then
             local base="${file#./src/}"
@@ -65,10 +65,12 @@ echo ""
 echo "=== Linking ==="
 cc -o "bin/main" \
     "${engine_files[@]}" \
-    "${other_files[@]}" -lSDL2 -lm
+    "${other_files[@]}" -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lm
 if [ $? -eq 0 ]; then
     echo "Linking successful: bin/main"
-    ./bin/main
+    cd bin
+    ./main
+    cd ..
 else
     echo "Linking failed!"
 fi

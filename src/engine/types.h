@@ -2,6 +2,8 @@
 #define TYPES_H
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
+#include <SDL2/SDL_image.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -79,8 +81,18 @@ typedef struct
         int RendererWidth, RendererHeight;
 } RENDERER_SDL;
 
+typedef struct
+{
+        Mix_Chunk* Sample;
+        int Channel;
+        bool Valid;
+        bool Playing;
+} SOUND;
+
+
 typedef struct SCENE
 {
+        SOUND Sounds[512];
         KEYMAP Keymap;
         CAMERA Camera;
         RENDERER_SDL Renderer;
@@ -88,7 +100,9 @@ typedef struct SCENE
         COLOUR CurrentColor;
         char padd[4];
         size_t new, old;
-        float dt;
+        double dt;
+        double footstep_timer;
+        double footstep_interval;
         bool Grounded;
 } SCENE;
 
