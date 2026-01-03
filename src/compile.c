@@ -97,7 +97,7 @@ void compile_file(const char *src_path, const char *compiler, const char *includ
 
         char cmd[MAX_PATH * 3];
         if (is_c_file)
-                snprintf(cmd, sizeof(cmd), "%s %s -c %s -o %s -Wall -Wextra -fno-ident -fno-asynchronous-unwind-tables -O3", compiler, include, src_path, output_file);
+                snprintf(cmd, sizeof(cmd), "%s %s -c %s -o %s -Wall -Wextra -fno-ident -g0 -fno-asynchronous-unwind-tables -O3", compiler, include, src_path, output_file);
         else
                 snprintf(cmd, sizeof(cmd), "%s -c %s -o %s", compiler, src_path, output_file);
 

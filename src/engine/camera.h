@@ -21,5 +21,6 @@
 size_t DrawObject(Mesh3D *Cube, SCENE *Scene);
 void InitProjectionMat(SCENE *Scene);
 size_t DrawScene(SCENE *Scene);
+void MulMatVecW(const VEC3 *i, VEC3 *o, double *wOut, const Mat4x4 *m);
 
 #endif

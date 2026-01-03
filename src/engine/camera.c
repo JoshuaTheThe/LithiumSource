@@ -27,12 +27,34 @@ void SDL_SWAP(int *a, int *b)
 	*(b) = temp;
 }
 
-void MulMatVec(const VEC3 * const i, VEC3 *o, const Mat4x4 * const m)
+void MulMatVec(const VEC3 *const i, VEC3 *o, const Mat4x4 *const m)
 {
 	o->X = i->X * m->m[0][0] + i->Y * m->m[1][0] + i->Z * m->m[2][0] + m->m[3][0];
 	o->Y = i->X * m->m[0][1] + i->Y * m->m[1][1] + i->Z * m->m[2][1] + m->m[3][1];
 	o->Z = i->X * m->m[0][2] + i->Y * m->m[1][2] + i->Z * m->m[2][2] + m->m[3][2];
 	double w = i->X * m->m[0][3] + i->Y * m->m[1][3] + i->Z * m->m[2][3] + m->m[3][3];
+
+	if (w != 0.0)
+	{
+		o->X /= w;
+		o->Y /= w;
+		o->Z /= w;
+	}
+}
+
+void MulMatVecW(const VEC3 *i, VEC3 *o, double *wOut, const Mat4x4 *m)
+{
+	double w =
+	    i->X * m->m[0][3] +
+	    i->Y * m->m[1][3] +
+	    i->Z * m->m[2][3] +
+	    m->m[3][3];
+
+	o->X = i->X * m->m[0][0] + i->Y * m->m[1][0] + i->Z * m->m[2][0] + m->m[3][0];
+	o->Y = i->X * m->m[0][1] + i->Y * m->m[1][1] + i->Z * m->m[2][1] + m->m[3][1];
+	o->Z = i->X * m->m[0][2] + i->Y * m->m[1][2] + i->Z * m->m[2][2] + m->m[3][2];
+
+	*wOut = w;
 
 	if (w != 0.0)
 	{
@@ -157,13 +179,6 @@ void InitProjectionMat(SCENE *Scene)
 	ProjectionMatrix.m[3][3] = 0.0;
 }
 
-static int interpolateX(int y1, int y2, int x1, int x2, int y)
-{
-	if (y1 == y2)
-		return x1;
-	return x1 + (x2 - x1) * (y - y1) / (y2 - y1);
-}
-
 static COLOUR GetCol(COLOUR col, double lum)
 {
 	if (lum < -1)
@@ -177,9 +192,9 @@ static COLOUR GetCol(COLOUR col, double lum)
 
 	double mappedLum = (lum + 1) / 2.0;
 
-	int R = col.r;//(int)(256.0 * (mappedLum * ((double)col.r / 256.0)));
-	int G = col.g;//(int)(256.0 * (mappedLum * ((double)col.g / 256.0)));
-	int B = col.b;//(int)(256.0 * (mappedLum * ((double)col.b / 256.0)));
+	int R = col.r; //(int)(256.0 * (mappedLum * ((double)col.r / 256.0)));
+	int G = col.g; //(int)(256.0 * (mappedLum * ((double)col.g / 256.0)));
+	int B = col.b; //(int)(256.0 * (mappedLum * ((double)col.b / 256.0)));
 
 	return (COLOUR){R, G, B};
 }
@@ -205,6 +220,13 @@ static VEC3 IntersectPlane(
 	return AddVec3(lineStart, &lineToIntersect);
 }
 
+static UV IntersectUV(UV uvStart, UV uvEnd, double t)
+{
+	return (UV){
+	    uvStart.u + (uvEnd.u - uvStart.u) * t,
+	    uvStart.v + (uvEnd.v - uvStart.v) * t};
+}
+
 static int ClipTriangleNearPlane(
     TRI3D *in,
     TRI3D *out1,
@@ -216,14 +238,24 @@ static int ClipTriangleNearPlane(
 
 	VEC3 *inside[3];
 	VEC3 *outside[3];
+	UV *uvInside[3];
+	UV *uvOutside[3];
 	int nInside = 0, nOutside = 0;
 
 	for (int i = 0; i < 3; i++)
 	{
 		if (in->p[i].Z >= near)
-			inside[nInside++] = &in->p[i];
+		{
+			inside[nInside] = &in->p[i];
+			uvInside[nInside] = &in->uv[i];
+			nInside++;
+		}
 		else
-			outside[nOutside++] = &in->p[i];
+		{
+			outside[nOutside] = &in->p[i];
+			uvOutside[nOutside] = &in->uv[i];
+			nOutside++;
+		}
 	}
 
 	if (nInside == 0)
@@ -238,8 +270,19 @@ static int ClipTriangleNearPlane(
 	if (nInside == 1 && nOutside == 2)
 	{
 		out1->p[0] = *inside[0];
+		out1->uv[0] = *uvInside[0];
+
+		double t0 = (-planeNormal.Z * (inside[0]->Z - planePoint.Z)) /
+			    (outside[0]->Z - inside[0]->Z);
+		double t1 = (-planeNormal.Z * (inside[0]->Z - planePoint.Z)) /
+			    (outside[1]->Z - inside[0]->Z);
+
 		out1->p[1] = IntersectPlane(&planePoint, &planeNormal, inside[0], outside[0]);
+		out1->uv[1] = IntersectUV(*uvInside[0], *uvOutside[0], t0);
+
 		out1->p[2] = IntersectPlane(&planePoint, &planeNormal, inside[0], outside[1]);
+		out1->uv[2] = IntersectUV(*uvInside[0], *uvOutside[1], t1);
+
 		out1->col = in->col;
 		return 1;
 	}
@@ -247,12 +290,24 @@ static int ClipTriangleNearPlane(
 	if (nInside == 2 && nOutside == 1)
 	{
 		out1->p[0] = *inside[0];
+		out1->uv[0] = *uvInside[0];
 		out1->p[1] = *inside[1];
+		out1->uv[1] = *uvInside[1];
+
+		double t0 = (-planeNormal.Z * (inside[0]->Z - planePoint.Z)) /
+			    (outside[0]->Z - inside[0]->Z);
+		double t1 = (-planeNormal.Z * (inside[1]->Z - planePoint.Z)) /
+			    (outside[0]->Z - inside[1]->Z);
+
 		out1->p[2] = IntersectPlane(&planePoint, &planeNormal, inside[0], outside[0]);
+		out1->uv[2] = IntersectUV(*uvInside[0], *uvOutside[0], t0);
 
 		out2->p[0] = *inside[1];
+		out2->uv[0] = *uvInside[1];
 		out2->p[1] = out1->p[2];
+		out2->uv[1] = out1->uv[2];
 		out2->p[2] = IntersectPlane(&planePoint, &planeNormal, inside[1], outside[0]);
+		out2->uv[2] = IntersectUV(*uvInside[1], *uvOutside[0], t1);
 
 		out1->col = out2->col = in->col;
 		return 2;
@@ -301,12 +356,19 @@ static int ProcessViewTriangle(
 			dp = 0;
 
 		triProj.col = GetCol(triView->col, dp);
+		triProj.uv[0] = triView->uv[0];
+		triProj.uv[1] = triView->uv[1];
+		triProj.uv[2] = triView->uv[2];
 
 		for (int i = 0; i < 3; i++)
 		{
-			MulMatVec(&triClip->p[i],
-				  &triProj.p[i],
-				  &ProjectionMatrix);
+			double clip_w = 0.0;
+			MulMatVecW(&triClip->p[i],
+				   &triProj.p[i],
+				   &clip_w,
+				   &ProjectionMatrix);
+
+			triProj.w[i] = 1.0 / clip_w;
 
 			triProj.p[i].X =
 			    (triProj.p[i].X + 1) * 0.5 *
@@ -321,136 +383,6 @@ static int ProcessViewTriangle(
 	}
 
 	return outCount;
-}
-
-/* If further than current value, set and draw */
-static void PutPixel(SCENE *Scene, size_t X, size_t Y, double Z, COLOUR Col)
-{
-	if (!Scene || !Scene->Renderer.ZBuffer)
-		TODO();
-	if (X >= (size_t)Scene->Renderer.RendererWidth || Y >= (size_t)Scene->Renderer.RendererHeight)
-		return;
-	size_t index = Y * Scene->Renderer.RendererWidth + X;
-	if (Scene->Renderer.ZBuffer[index] > Z)
-	{
-		Scene->Renderer.ZBuffer[index] = Z;
-		Scene->Renderer.RGBBuffer[index] = Col;
-		SDL_SetRenderDrawColor(Scene->Renderer.Renderer, Col.r, Col.g, Col.b, 255);
-		SDL_RenderDrawPoint(Scene->Renderer.Renderer, X, Y);
-	}
-}
-
-static double interpolateDouble(int a, int b, double va, double vb, int x)
-{
-	if (a == b)
-		return va;
-	return va + (vb - va) * (x - a) / (b - a);
-}
-
-static void DrawLine(SCENE *Scene, const VEC3 A, const VEC3 B, COLOUR Col)
-{
-	int x0 = (int)A.X;
-	int y0 = (int)A.Y;
-	double z0 = A.Z;
-
-	int x1 = (int)B.X;
-	int y1 = (int)B.Y;
-	double z1 = B.Z;
-
-	int dx = abs(x1 - x0);
-	int dy = abs(y1 - y0);
-	int sx = (x0 < x1) ? 1 : -1;
-	int sy = (y0 < y1) ? 1 : -1;
-	int err = dx - dy;
-
-	double total_steps = sqrt(dx * dx + dy * dy);
-	double z_step = (total_steps > 0) ? (z1 - z0) / total_steps : 0;
-	double current_z = z0;
-
-	while (true)
-	{
-		PutPixel(Scene, x0, y0, current_z, Col);
-
-		if (x0 == x1 && y0 == y1)
-			break;
-
-		int e2 = err * 2;
-		if (e2 > -dy)
-		{
-			err -= dy;
-			x0 += sx;
-		}
-		if (e2 < dx)
-		{
-			err += dx;
-			y0 += sy;
-		}
-
-		current_z += z_step;
-	}
-}
-
-static void DrawTri(SCENE *Scene, TRI3D Tri)
-{
-	double temp_z, z_start, z_end, z;
-	int temp_x, x_start, x_end, y0, y1, y2;
-
-	if (Tri.p[1].Y < Tri.p[0].Y)
-	{
-		VEC3 temp = Tri.p[0];
-		Tri.p[0] = Tri.p[1];
-		Tri.p[1] = temp;
-	}
-	if (Tri.p[2].Y < Tri.p[0].Y)
-	{
-		VEC3 temp = Tri.p[0];
-		Tri.p[0] = Tri.p[2];
-		Tri.p[2] = temp;
-	}
-	if (Tri.p[2].Y < Tri.p[1].Y)
-	{
-		VEC3 temp = Tri.p[1];
-		Tri.p[1] = Tri.p[2];
-		Tri.p[2] = temp;
-	}
-
-	y0 = (int)Tri.p[0].Y;
-	y1 = (int)Tri.p[1].Y;
-	y2 = (int)Tri.p[2].Y;
-
-	for (int y = y0; y <= y2; y++)
-	{
-		if (y < y1)
-		{
-			x_start = interpolateX(y0, y1, (int)Tri.p[0].X, (int)Tri.p[1].X, y);
-			x_end = interpolateX(y0, y2, (int)Tri.p[0].X, (int)Tri.p[2].X, y);
-			z_start = interpolateDouble(y0, y1, Tri.p[0].Z, Tri.p[1].Z, y);
-			z_end = interpolateDouble(y0, y2, Tri.p[0].Z, Tri.p[2].Z, y);
-		}
-		else
-		{
-			x_start = interpolateX(y1, y2, (int)Tri.p[1].X, (int)Tri.p[2].X, y);
-			x_end = interpolateX(y0, y2, (int)Tri.p[0].X, (int)Tri.p[2].X, y);
-			z_start = interpolateDouble(y1, y2, Tri.p[1].Z, Tri.p[2].Z, y);
-			z_end = interpolateDouble(y0, y2, Tri.p[0].Z, Tri.p[2].Z, y);
-		}
-
-		if (x_start > x_end)
-		{
-			temp_x = x_start;
-			temp_z = z_start;
-			x_start = x_end;
-			x_end = temp_x;
-			z_start = z_end;
-			z_end = temp_z;
-		}
-
-		for (int x = x_start; x <= x_end; x++)
-		{
-			z = interpolateDouble(x_start, x_end, z_start, z_end, x);
-			PutPixel(Scene, x, y, z, Tri.col);
-		}
-	}
 }
 
 static Mat4x4 MakeViewMat(VEC3 cameraForward, VEC3 cameraRight, VEC3 cameraUp, VEC3 cameraPos)
@@ -474,7 +406,7 @@ static Mat4x4 MakeViewMat(VEC3 cameraForward, VEC3 cameraRight, VEC3 cameraUp, V
 	return mat;
 }
 
-static Mat4x4 MakeWorldMat(const Mesh3D * const Mesh, VEC3 cameraForward, VEC3 cameraRight, VEC3 cameraUp, VEC3 cameraPos)
+static Mat4x4 MakeWorldMat(const Mesh3D *const Mesh, VEC3 cameraForward, VEC3 cameraRight, VEC3 cameraUp, VEC3 cameraPos)
 {
 	Mat4x4 RotMatrixX = MakeRotationX(DEG_TO_RAD(Mesh->ROTX));
 	Mat4x4 RotMatrixY = MakeRotationY(DEG_TO_RAD(Mesh->ROTY));
@@ -483,21 +415,21 @@ static Mat4x4 MakeWorldMat(const Mesh3D * const Mesh, VEC3 cameraForward, VEC3 c
 	Mat4x4 ObjectRotation = MulMatMat(&RotMatrixY, &RotMatrixX);
 	ObjectRotation = MulMatMat(&ObjectRotation, &RotMatrixZ);
 	Mat4x4 ObjectTranslation = MakeTransMat(
-		Mesh->origin.X,
-		Mesh->origin.Y,
-		Mesh->origin.Z);
+	    Mesh->origin.X,
+	    Mesh->origin.Y,
+	    Mesh->origin.Z);
 
 	Mat4x4 ScaleMatrix = MakeScaleMat(
-		Mesh->Scale.X,
-		Mesh->Scale.Y,
-		Mesh->Scale.Z);
+	    Mesh->Scale.X,
+	    Mesh->Scale.Y,
+	    Mesh->Scale.Z);
 
 	Mat4x4 WorldMatrix = MulMatMat(&ScaleMatrix, &ObjectRotation);
 	WorldMatrix = MulMatMat(&WorldMatrix, &ObjectTranslation);
 
 	Mat4x4 ViewMatrix = MakeViewMat(
-		cameraForward, cameraRight, cameraUp,
-		cameraPos);
+	    cameraForward, cameraRight, cameraUp,
+	    cameraPos);
 
 	Mat4x4 WorldViewMatrix = MulMatMat(&WorldMatrix, &ViewMatrix);
 	return WorldViewMatrix;
@@ -510,7 +442,7 @@ size_t DrawScene(SCENE *Scene)
 	SceneClearBuffers(Scene);
 	static size_t elapsedTime1 = 0;
 	TRI3D tri, triTransformed, clipped[2], out[2];
-	int n, count;
+	int count;
 	elapsedTime1 = SDL_GetTicks();
 	const double yaw = DEG_TO_RAD(Scene->Camera.Rotation.Y);
 	const double pitch = fmax(fmin(DEG_TO_RAD(Scene->Camera.Rotation.X), DEG_TO_RAD(89.0)), DEG_TO_RAD(-89.0));
@@ -528,8 +460,8 @@ size_t DrawScene(SCENE *Scene)
 	{
 		const Mesh3D *Mesh = Scene->items[i];
 		const Mat4x4 WorldViewMatrix = MakeWorldMat(
-			Mesh, cameraForward, cameraRight, cameraUp,
-			Scene->Camera.Position);
+		    Mesh, cameraForward, cameraRight, cameraUp,
+		    Scene->Camera.Position);
 
 		for (size_t i = 0; i < Mesh->tri_count; ++i)
 		{
@@ -537,16 +469,11 @@ size_t DrawScene(SCENE *Scene)
 			MulMatVec(&tri.p[0], &triTransformed.p[0], &WorldViewMatrix);
 			MulMatVec(&tri.p[1], &triTransformed.p[1], &WorldViewMatrix);
 			MulMatVec(&tri.p[2], &triTransformed.p[2], &WorldViewMatrix);
-			n = ClipTriangleNearPlane(&triTransformed,
-						      &clipped[0],
-						      &clipped[1],
-						      Scene->Camera.Near);
-			if (!n)
-				continue;
 			count = ProcessViewTriangle(&triTransformed, out, Scene);
 			for (int k = 0; k < count; k++)
 			{
-				DrawTri(Scene, out[k]);
+				out[k].Texture = tri.Texture;
+				DrawTriWTex(Scene, out[k]);
 			}
 		}
 	}

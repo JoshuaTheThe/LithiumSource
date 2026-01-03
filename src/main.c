@@ -17,6 +17,7 @@
 #include <engine/mesh.h>
 #include <engine/physics.h>
 #include <engine/sound.h>
+#include <engine/texture.h>
 
 int compile(void);
 
@@ -28,8 +29,8 @@ int main(int Count, char **Arguments)
         {
                 return compile();
         }
-        const int width = 200;
-        const int height = 200;
+        const int width = 400;
+        const int height = 400;
         const int scale = 2;
 
         int result = Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 512);
@@ -53,9 +54,17 @@ int main(int Count, char **Arguments)
         Scene->Renderer.RendererWidth /= scale;
 
         Mesh3D *Mesh = InitMesh(0);
-        LoadMeshFromFile("assets/test.obj", Mesh);
-        ScaleMesh(Mesh, 1.0);
+        LoadMeshFromFile("assets/plane.obj", Mesh);
+        ScaleMesh(Mesh, 100.0);
         da_append(Scene, Mesh);
+        TEXTURE *Texture = LoadTexture("happy.bmp");
+        if (Texture)
+        {
+                for (size_t i = 0; i < Mesh->tri_count; ++i)
+                {
+                        Mesh->tris[i].Texture = Texture;
+                }
+        }
 
         // Mesh = InitMesh(0);
         // LoadMeshFromFile("assets/skull.obj", Mesh);
@@ -184,7 +193,7 @@ int main(int Count, char **Arguments)
 
                 if ((Scene->Keymap['w'] || Scene->Keymap['s'] ||
                      Scene->Keymap['a'] || Scene->Keymap['d']) &&
-                     Scene->Grounded && Scene->footstep_timer <= 0.0)
+                    Scene->Grounded && Scene->footstep_timer <= 0.0)
                 {
                         walk_cycle = (walk_cycle + 1) % 4;
                         PlaySound(Scene, walkidxs[walk_cycle]);
@@ -203,6 +212,7 @@ int main(int Count, char **Arguments)
         }
 
         SceneEnd(NULL, true);
+        // /FreeTextureData(Texture);
         free(ProgramPath);
 end:
         (void)Count, (void)Arguments;

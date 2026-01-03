@@ -163,6 +163,6 @@ void SceneClearBuffers(SCENE *Scene)
         memset(Scene->Renderer.RGBBuffer, 0, Scene->Renderer.RendererWidth * Scene->Renderer.RendererHeight * sizeof(*Scene->Renderer.RGBBuffer));
 	for (size_t i = 0; i < (size_t)Scene->Renderer.RendererWidth * (size_t)Scene->Renderer.RendererHeight; ++i)
 	{
-		Scene->Renderer.ZBuffer[i] = INFINITY;
+		Scene->Renderer.ZBuffer[i] = -INFINITY;
 	}
 }
