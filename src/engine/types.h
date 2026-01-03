@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define __VER__ "0.0.24"
+
 #define da_append(xs, x)                                                                           \
         do                                                                                         \
         {                                                                                          \
@@ -93,6 +95,8 @@ typedef struct
 typedef struct
 {
         SDL_Renderer *Renderer;
+        double *ZBuffer;
+        COLOUR *RGBBuffer;
         int RendererWidth, RendererHeight;
 } RENDERER_SDL;
 
@@ -113,6 +117,7 @@ typedef struct SCENE
         WINDOW_SDL Window;
         COLOUR CurrentColor;
         char padd[4];
+        VEC3 LightPos;
         Mesh3D **items;
         size_t count, capacity;
         size_t new, old;

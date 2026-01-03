@@ -58,7 +58,14 @@ SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
 
         Scene->footstep_interval = 0.3;
         Scene->footstep_timer = 0.00;
+        Scene->Renderer.ZBuffer = calloc(H, W * sizeof(*Scene->Renderer.ZBuffer));
+        Scene->Renderer.RGBBuffer = calloc(H, W * sizeof(*Scene->Renderer.RGBBuffer));
+        if (!Scene->Renderer.ZBuffer || !Scene->Renderer.RGBBuffer)
+                TODO();
 
+        Scene->LightPos.X = 0.0;
+        Scene->LightPos.Y = 0.0;
+        Scene->LightPos.Z = 1.0;
         return Scene;
 }
 
@@ -116,6 +123,9 @@ void SceneEnd(SCENE *Scene, bool Final)
                         SceneClear(Scene);
                 SDL_DestroyRenderer(Scene->Renderer.Renderer);
                 SDL_DestroyWindow(Scene->Window.Window);
+                free(Scene->Renderer.ZBuffer);
+                free(Scene->Renderer.RGBBuffer);
+                memset(Scene, 0, sizeof(*Scene));
                 free(Scene);
         }
         if (Final)
@@ -124,4 +134,28 @@ void SceneEnd(SCENE *Scene, bool Final)
                 initialised = false;
         }
         return;
+}
+
+size_t SceneTriCount(SCENE *Scene)
+{
+        if (!Scene)
+                return 0;
+        size_t tri_count = 0;
+        for (size_t i = 0; i < Scene->count; ++i)
+        {
+                tri_count += Scene->items[i]->tri_count;
+        }
+
+        return tri_count;
+}
+
+void SceneClearBuffers(SCENE *Scene)
+{
+        if (!Scene)
+                TODO();
+        memset(Scene->Renderer.RGBBuffer, 0, Scene->Renderer.RendererWidth * Scene->Renderer.RendererHeight * sizeof(*Scene->Renderer.RGBBuffer));
+	for (size_t i = 0; i < (size_t)Scene->Renderer.RendererWidth * (size_t)Scene->Renderer.RendererHeight; ++i)
+	{
+		Scene->Renderer.ZBuffer[i] = INFINITY;
+	}
 }

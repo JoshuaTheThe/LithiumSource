@@ -53,14 +53,13 @@ int main(int Count, char **Arguments)
         Scene->Renderer.RendererWidth /= scale;
 
         Mesh3D *Mesh = InitMesh(0);        
-        LoadMeshFromFile("assets/c1a0.obj", Mesh);
-        ScaleMesh(Mesh, 0.1);
-        da_append(Scene, Mesh);
-
-        Mesh = InitMesh(0);
         LoadMeshFromFile("assets/skull.obj", Mesh);
         ScaleMesh(Mesh, 10.0);
         da_append(Scene, Mesh);
+
+        // Mesh = InitMesh(0);
+        // LoadMeshFromFile("assets/skull.obj", Mesh);
+        // da_append(Scene, Mesh);
 
         size_t jumpidx = LoadSound(Scene, "assets/jump.wav");
         size_t walkidxs[4];
@@ -77,7 +76,7 @@ int main(int Count, char **Arguments)
 
         int walk_cycle = 0;
 
-        bool flying = false;
+        bool flying = true;
 
         while (Scene)
         {

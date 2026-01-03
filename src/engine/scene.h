@@ -15,5 +15,7 @@
 SCENE *SceneInit( const char *Title, int X, int Y, int W, int H );
 void SceneEnd( SCENE *Scene, bool Final );
 void SceneTick( SCENE **Scene );
+size_t SceneTriCount(SCENE *Scene);
+void SceneClearBuffers(SCENE *Scene);
 
 #endif
