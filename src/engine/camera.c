@@ -290,8 +290,8 @@ static int ProcessViewTriangle(
 		nrm = NormaliseVec3(&nrm);
 
 		VEC3 viewDir = {0, 0, 1};
-		if (DotVec3(&nrm, &viewDir) > 0)
-		        continue;
+		// if (DotVec3(&nrm, &viewDir) > 0)
+		//         continue;
 
 		VEC3 light = Scene->LightPos;
 		light = NormaliseVec3(&light);

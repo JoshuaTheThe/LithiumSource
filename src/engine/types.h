@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define __VER__ "0.0.25"
+#define __VER__ "0.0.26"
 
 #define da_append(xs, x)                                                                           \
         do                                                                                         \
@@ -112,6 +112,7 @@ typedef struct SCENE
 {
         SOUND Sounds[512];
         KEYMAP Keymap;
+        KEYMAP JustPressed;
         CAMERA Camera;
         RENDERER_SDL Renderer;
         WINDOW_SDL Window;

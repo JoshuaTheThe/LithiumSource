@@ -83,13 +83,20 @@ void SceneTick(SCENE **Scene)
                 case SDL_KEYDOWN:
                         if (e.key.keysym.sym < 255)
                         {
+                                if (!(*Scene)->Keymap[e.key.keysym.sym])
+                                        (*Scene)->JustPressed[e.key.keysym.sym] = true;
+                                else
+                                        (*Scene)->JustPressed[e.key.keysym.sym] = false;
                                 (*Scene)->Keymap[e.key.keysym.sym] = true;
-                                printf("%c", (*Scene)->Keymap[e.key.keysym.sym]);
+
                         }
                         break;
                 case SDL_KEYUP:
                         if (e.key.keysym.sym < 255)
+                        {
+                                (*Scene)->JustPressed[e.key.keysym.sym] = false;
                                 (*Scene)->Keymap[e.key.keysym.sym] = false;
+                        }
                         break;
                 case SDL_QUIT:
                         CleanupSound(*Scene);

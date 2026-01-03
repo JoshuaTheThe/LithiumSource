@@ -62,6 +62,7 @@ int main(int Count, char **Arguments)
         // da_append(Scene, Mesh);
 
         size_t jumpidx = LoadSound(Scene, "assets/jump.wav");
+        size_t denyselect = LoadSound(Scene, "assets/denyselect.wav");
         size_t walkidxs[4];
         walkidxs[0] = LoadSound(Scene, "assets/walk_0.wav");
         walkidxs[1] = LoadSound(Scene, "assets/walk_1.wav");
@@ -164,6 +165,11 @@ int main(int Count, char **Arguments)
                 {
                         Scene->Camera.Velocity.Y = GRAVITY * JUMP_POWER;
                         PlaySound(Scene, jumpidx);
+                }
+                else if (Scene->JustPressed['e'])
+                {
+                        PlaySound(Scene, denyselect);
+                        Scene->JustPressed['e'] = false;
                 }
                 if (Scene->Keymap['v'])
                 {
