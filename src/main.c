@@ -73,7 +73,7 @@ int main(int Count, char **Arguments)
         Scene->Camera.Bounds.Min = (VEC3){.X = -1.0, .Y = -6.2, .Z = -1.0};
         Scene->Camera.Position.Y = 10.0;
         Scene->Camera.Velocity.Y = 0.1;
-        double speed = 2;
+        double speed = 1;
 
         int walk_cycle = 0;
 
@@ -115,7 +115,7 @@ int main(int Count, char **Arguments)
                 }
                 else
                 {
-                        speed = 2;
+                        speed = 1;
                 }
                 if (Scene->Keymap['w'])
                 {

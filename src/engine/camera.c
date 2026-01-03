@@ -302,12 +302,6 @@ static int ProcessViewTriangle(
 
 		triProj.col = GetCol(triView->col, dp);
 
-		triProj.Depth =
-		    (triClip->p[0].Z +
-		     triClip->p[1].Z +
-		     triClip->p[2].Z) /
-		    3.0;
-
 		for (int i = 0; i < 3; i++)
 		{
 			MulMatVec(&triClip->p[i],

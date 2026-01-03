@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define __VER__ "0.0.27"
+#define __VER__ "0.0.28"
 
 #define da_append(xs, x)                                                                           \
         do                                                                                         \
@@ -54,7 +54,6 @@ typedef struct
 {
         VEC3 p[3];
         COLOUR col;
-        double Depth;
         bool invalid;
 } TRI3D;
 
