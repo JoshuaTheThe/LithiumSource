@@ -28,8 +28,8 @@ int main(int Count, char **Arguments)
         {
                 return compile();
         }
-        const int width = 500;
-        const int height = 500;
+        const int width = 200;
+        const int height = 200;
         const int scale = 2;
 
         int result = Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 512);
@@ -53,8 +53,8 @@ int main(int Count, char **Arguments)
         Scene->Renderer.RendererWidth /= scale;
 
         Mesh3D *Mesh = InitMesh(0);
-        LoadMeshFromFile("assets/plane.obj", Mesh);
-        ScaleMesh(Mesh, 10.0);
+        LoadMeshFromFile("assets/test.obj", Mesh);
+        ScaleMesh(Mesh, 1.0);
         da_append(Scene, Mesh);
 
         // Mesh = InitMesh(0);
@@ -198,7 +198,7 @@ int main(int Count, char **Arguments)
                 SDL_RenderPresent(Scene->Renderer.Renderer);
 
                 Scene->new = SDL_GetTicks();
-                Scene->dt = (float)(Scene->new - Scene->old) / 1000.0;
+                Scene->dt = (double)(Scene->new - Scene->old) / 1000.0;
                 Scene->old = Scene->new;
         }
 

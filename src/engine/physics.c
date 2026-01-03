@@ -98,7 +98,7 @@ static bool ResolveCollision(SCENE *Scene, Mesh3D *Mesh)
 		collision = true;
 		if (fabs(overlapX) == minOverlap)
 		{
-			Scene->Camera.Position.X -= overlapX;
+			Scene->Camera.Position.X += overlapX;
 			if (fabs(Scene->Camera.Velocity.X) > 0.1)
 				Scene->Camera.Velocity.X = 0;
 		}
@@ -118,7 +118,7 @@ static bool ResolveCollision(SCENE *Scene, Mesh3D *Mesh)
 		}
 		else if (fabs(overlapZ) == minOverlap)
 		{
-			Scene->Camera.Position.Z -= overlapZ;
+			Scene->Camera.Position.Z += overlapZ;
 			if (fabs(Scene->Camera.Velocity.Z) > 0.1)
 				Scene->Camera.Velocity.Z = 0;
 		}
