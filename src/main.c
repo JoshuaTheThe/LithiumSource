@@ -52,8 +52,8 @@ int main(int Count, char **Arguments)
         Scene->Renderer.RendererHeight /= scale;
         Scene->Renderer.RendererWidth /= scale;
 
-        Mesh3D *Mesh = InitMesh(0);        
-        LoadMeshFromFile("assets/skull.obj", Mesh);
+        Mesh3D *Mesh = InitMesh(0);
+        LoadMeshFromFile("assets/plane.obj", Mesh);
         ScaleMesh(Mesh, 10.0);
         da_append(Scene, Mesh);
 
@@ -160,7 +160,7 @@ int main(int Count, char **Arguments)
                 {
                         Scene->Camera.Velocity.Y += speed;
                 }
-                else if (Scene->Keymap[' '] && Scene->Camera.Velocity.Y == 0.00) /* Stinky hack */
+                else if (Scene->Keymap[' '] && Scene->Grounded)
                 {
                         Scene->Camera.Velocity.Y = GRAVITY * JUMP_POWER;
                         PlaySound(Scene, jumpidx);
@@ -174,13 +174,11 @@ int main(int Count, char **Arguments)
                         flying = false;
                 }
 
-
                 Scene->footstep_timer -= Scene->dt;
 
                 if ((Scene->Keymap['w'] || Scene->Keymap['s'] ||
                      Scene->Keymap['a'] || Scene->Keymap['d']) &&
-                    Scene->Camera.Velocity.Y == 0.0 &&
-                    Scene->footstep_timer <= 0.0)
+                     Scene->Grounded && Scene->footstep_timer <= 0.0)
                 {
                         walk_cycle = (walk_cycle + 1) % 4;
                         PlaySound(Scene, walkidxs[walk_cycle]);
