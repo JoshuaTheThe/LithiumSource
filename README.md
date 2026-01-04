@@ -1,6 +1,7 @@
 # simple game engine, called Lithium3D (Li3D)
 ![the Bob-Omb battlefield map displayed using the engine](./example%20images/bob-omb%20battlefield%200.0.10.png)
 ![c1a0 from half life](./example%20images/c1a0%200.0.10.png)
+![recent test](./example%20images/test%200.0.30.png)
 
 # Build Information
 
