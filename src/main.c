@@ -55,10 +55,9 @@ int main(int Count, char **Arguments)
 
         Mesh3D *Mesh = InitMesh(0);
         LoadMeshFromFile("assets/monke.obj", Mesh);
-        ScaleMesh(Mesh, 10.0);
         da_append(Scene, Mesh);
-        Mesh->origin.Z = 100.0;
-        Mesh->origin.Y = 10.0;
+        Mesh->origin.Z = 10.0;
+        Mesh->origin.Y = 1.0;
         Mesh->ROTY = 180.0;
         TEXTURE *Texture = NULL;//LoadTexture("happy.bmp");
         if (Texture)
@@ -71,9 +70,8 @@ int main(int Count, char **Arguments)
 
         Mesh = InitMesh(0);
         LoadMeshFromFile("assets/long plane.obj", Mesh);
-        ScaleMesh(Mesh, 10.0);
         da_append(Scene, Mesh);
-        Mesh->origin.Z = 50.0;
+        Mesh->origin.Z = 5.0;
         if (Texture)
         {
                 for (size_t i = 0; i < Mesh->tri_count; ++i)
