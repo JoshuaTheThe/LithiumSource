@@ -59,15 +59,7 @@ int main(int Count, char **Arguments)
         Mesh->origin.Z = 10.0;
         Mesh->origin.Y = 1.0;
         Mesh->ROTY = 180.0;
-        TEXTURE *Texture = NULL;//LoadTexture("happy.bmp");
-        if (Texture)
-        {
-                for (size_t i = 0; i < Mesh->tri_count; ++i)
-                {
-                        Mesh->tris[i].Texture = Texture;
-                }
-        }
-
+        TEXTURE *Texture = LoadTexture("happy.bmp");
         Mesh = InitMesh(0);
         LoadMeshFromFile("assets/long plane.obj", Mesh);
         da_append(Scene, Mesh);
