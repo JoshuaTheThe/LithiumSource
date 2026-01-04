@@ -45,7 +45,7 @@ SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
         Scene->CurrentColor.g = 255;
         Scene->CurrentColor.b = 255;
 
-        Scene->Camera.FOV = 100;
+        Scene->Camera.FOV = 70;
         Scene->Camera.Aspect = (double)W / (double)H;
         Scene->Camera.Position.X = 0.0;
         Scene->Camera.Position.Y = 0.0;

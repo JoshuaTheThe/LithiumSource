@@ -1,9 +1,8 @@
 #include <engine/physics.h>
 
-const double TERMINAL_VELOCITY = 100.0;
+const double TERMINAL_VELOCITY = 55.0;
 const double GRAVITY = 9.81;
 const double FRICTION = 8.0;
-const double PHYSICS_WAIT = 1.0;
 const double JUMP_POWER = 0.8;
 
 static BOUNDS GetPlayerBounds(SCENE *Scene)
@@ -130,9 +129,9 @@ static bool ResolveCollision(SCENE *Scene, Mesh3D *Mesh)
 void PhysicsTick(SCENE *Scene)
 {
 	// Apply gravity and friction
-	Scene->Camera.Velocity.X -= Scene->Camera.Velocity.X * FRICTION * Scene->dt * PHYSICS_WAIT;
-	Scene->Camera.Velocity.Z -= Scene->Camera.Velocity.Z * FRICTION * Scene->dt * PHYSICS_WAIT;
-	Scene->Camera.Velocity.Y -= GRAVITY * Scene->dt * PHYSICS_WAIT;
+	Scene->Camera.Velocity.X -= Scene->Camera.Velocity.X * FRICTION * Scene->dt;
+	Scene->Camera.Velocity.Z -= Scene->Camera.Velocity.Z * FRICTION * Scene->dt;
+	Scene->Camera.Velocity.Y -= GRAVITY * Scene->dt;
 
 	if (Scene->Camera.Velocity.Y < -TERMINAL_VELOCITY)
 		Scene->Camera.Velocity.Y = -TERMINAL_VELOCITY;
@@ -141,9 +140,9 @@ void PhysicsTick(SCENE *Scene)
 
 	// Sub-stepping for smooth collision
 	const double maxStep = 0.01;
-	double moveX = Scene->Camera.Velocity.X * Scene->dt * PHYSICS_WAIT;
-	double moveZ = Scene->Camera.Velocity.Z * Scene->dt * PHYSICS_WAIT;
-	double moveY = Scene->Camera.Velocity.Y * Scene->dt * PHYSICS_WAIT;
+	double moveX = Scene->Camera.Velocity.X * Scene->dt;
+	double moveZ = Scene->Camera.Velocity.Z * Scene->dt;
+	double moveY = Scene->Camera.Velocity.Y * Scene->dt;
 
 	int stepsX = (int)ceil(fabs(moveX) / maxStep);
 	int stepsZ = (int)ceil(fabs(moveZ) / maxStep);

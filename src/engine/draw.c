@@ -267,8 +267,13 @@ void DrawTriWTex(SCENE *Scene, TRI3D Tri)
 			UV uv = {u, v};
 			double z = 1.0 / w;
 
+                        if (!Tri.Texture)
+                        {
+                                PutPixel(Scene, x, y, -z, Tri.col);
+                                continue;
+                        }
 			COLOUR col = SampleTexture(Tri.Texture, uv);
-			PutPixel(Scene, x, y, z, col);
+			PutPixel(Scene, x, y, -z, col);
 		}
 	}
 }

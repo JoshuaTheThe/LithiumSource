@@ -54,10 +54,13 @@ int main(int Count, char **Arguments)
         Scene->Renderer.RendererWidth /= scale;
 
         Mesh3D *Mesh = InitMesh(0);
-        LoadMeshFromFile("assets/plane.obj", Mesh);
-        ScaleMesh(Mesh, 100.0);
+        LoadMeshFromFile("assets/monke.obj", Mesh);
+        ScaleMesh(Mesh, 10.0);
         da_append(Scene, Mesh);
-        TEXTURE *Texture = LoadTexture("happy.bmp");
+        Mesh->origin.Z = 100.0;
+        Mesh->origin.Y = 10.0;
+        Mesh->ROTY = 180.0;
+        TEXTURE *Texture = NULL;//LoadTexture("happy.bmp");
         if (Texture)
         {
                 for (size_t i = 0; i < Mesh->tri_count; ++i)
@@ -66,9 +69,18 @@ int main(int Count, char **Arguments)
                 }
         }
 
-        // Mesh = InitMesh(0);
-        // LoadMeshFromFile("assets/skull.obj", Mesh);
-        // da_append(Scene, Mesh);
+        Mesh = InitMesh(0);
+        LoadMeshFromFile("assets/long plane.obj", Mesh);
+        ScaleMesh(Mesh, 10.0);
+        da_append(Scene, Mesh);
+        Mesh->origin.Z = 50.0;
+        if (Texture)
+        {
+                for (size_t i = 0; i < Mesh->tri_count; ++i)
+                {
+                        Mesh->tris[i].Texture = Texture;
+                }
+        }
 
         size_t jumpidx = LoadSound(Scene, "assets/jump.wav");
         size_t denyselect = LoadSound(Scene, "assets/denyselect.wav");
@@ -78,11 +90,14 @@ int main(int Count, char **Arguments)
         walkidxs[2] = LoadSound(Scene, "assets/walk_2.wav");
         walkidxs[3] = LoadSound(Scene, "assets/walk_3.wav");
 
-        Scene->Camera.Bounds.Max = (VEC3){.X = 1.0, .Y = 1.0, .Z = 1.0};
-        Scene->Camera.Bounds.Min = (VEC3){.X = -1.0, .Y = -6.2, .Z = -1.0};
+        Scene->Camera.Bounds.Max = (VEC3){.X = 0.254, .Y = 0.254, .Z = 0.254};
+        Scene->Camera.Bounds.Min = (VEC3){.X = -0.254, .Y = -1.5748, .Z = -0.254};
         Scene->Camera.Position.Y = 10.0;
         Scene->Camera.Velocity.Y = 0.1;
-        double speed = 1;
+        const double walk_speed = 0.1;
+        const double rot_speed = 90.0;
+        double speed = 0.1;
+        double fast_speed = 0.2;
 
         int walk_cycle = 0;
 
@@ -110,21 +125,21 @@ int main(int Count, char **Arguments)
                         PhysicsTick(Scene);
                 else
                 {
-                        Scene->Camera.Velocity.X -= Scene->Camera.Velocity.X * FRICTION * Scene->dt * PHYSICS_WAIT;
-                        Scene->Camera.Velocity.Y -= Scene->Camera.Velocity.Y * FRICTION * Scene->dt * PHYSICS_WAIT;
-                        Scene->Camera.Velocity.Z -= Scene->Camera.Velocity.Z * FRICTION * Scene->dt * PHYSICS_WAIT;
-                        Scene->Camera.Position.X += Scene->Camera.Velocity.X * Scene->dt * PHYSICS_WAIT;
-                        Scene->Camera.Position.Y += Scene->Camera.Velocity.Y * Scene->dt * PHYSICS_WAIT;
-                        Scene->Camera.Position.Z += Scene->Camera.Velocity.Z * Scene->dt * PHYSICS_WAIT;
+                        Scene->Camera.Velocity.X -= Scene->Camera.Velocity.X * FRICTION * Scene->dt;
+                        Scene->Camera.Velocity.Y -= Scene->Camera.Velocity.Y * FRICTION * Scene->dt;
+                        Scene->Camera.Velocity.Z -= Scene->Camera.Velocity.Z * FRICTION * Scene->dt;
+                        Scene->Camera.Position.X += Scene->Camera.Velocity.X * Scene->dt;
+                        Scene->Camera.Position.Y += Scene->Camera.Velocity.Y * Scene->dt;
+                        Scene->Camera.Position.Z += Scene->Camera.Velocity.Z * Scene->dt;
                 }
 
                 if (Scene->Keymap['q'] && flying)
                 {
-                        speed = 4;
+                        speed = fast_speed;
                 }
                 else
                 {
-                        speed = 1;
+                        speed = walk_speed;
                 }
                 if (Scene->Keymap['w'])
                 {
@@ -148,19 +163,19 @@ int main(int Count, char **Arguments)
                 }
                 if (Scene->Keymap['z'])
                 {
-                        Scene->Camera.Rotation.Y -= 45 * (double)Scene->dt;
+                        Scene->Camera.Rotation.Y -= rot_speed * (double)Scene->dt;
                 }
                 if (Scene->Keymap['x'])
                 {
-                        Scene->Camera.Rotation.Y += 45 * (double)Scene->dt;
+                        Scene->Camera.Rotation.Y += rot_speed * (double)Scene->dt;
                 }
                 if (Scene->Keymap['r'])
                 {
-                        Scene->Camera.Rotation.X += 45 * (double)Scene->dt;
+                        Scene->Camera.Rotation.X += rot_speed * (double)Scene->dt;
                 }
                 if (Scene->Keymap['f'])
                 {
-                        Scene->Camera.Rotation.X -= 45 * (double)Scene->dt;
+                        Scene->Camera.Rotation.X -= rot_speed * (double)Scene->dt;
                 }
                 if (Scene->Keymap['c'] && flying)
                 {
