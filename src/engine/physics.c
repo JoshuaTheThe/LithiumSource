@@ -55,9 +55,10 @@ static bool AABBOverlap(BOUNDS a, BOUNDS b)
 static bool ResolveCollision(SCENE *Scene, Mesh3D *Mesh)
 {
 	BOUNDS player = GetPlayerBounds(Scene);
-	double overlapX = 0.0, overlapY = 0.0, overlapZ = 0.0,
-	       left, right, top, bottom, front, back,
-	       minOverlap;
+	double overlapX = 0.0, overlapY = 0.0, overlapZ = 0.0;
+        double left = 0.0, right = 0.0, top = 0.0, bottom = 0.0, front = 0.0, back = 0.0;
+        double minOverlap = 0.0;
+        
 	bool collision = false;
 	for (size_t i = 0; i < Mesh->tri_count; i++)
 	{
