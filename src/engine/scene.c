@@ -41,31 +41,52 @@ SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
         Scene->Renderer.RendererWidth = W;
         Scene->Renderer.RendererHeight = H;
 
-        Scene->CurrentColor.r = 255;
-        Scene->CurrentColor.g = 255;
-        Scene->CurrentColor.b = 255;
+        Scene->Player.FOV = 70;
+        Scene->Player.Aspect = (double)W / (double)H;
+        Scene->Player.Position.X = 0.0;
+        Scene->Player.Position.Y = 0.0;
+        Scene->Player.Position.Z = 0.0;
+        Scene->Player.Rotation.X = 0.0;
+        Scene->Player.Rotation.Y = 0.0;
+        Scene->Player.Rotation.Z = 0.0;
+        Scene->Player.Near = 0.1;
+        Scene->Player.Far = 1000.0;
 
-        Scene->Camera.FOV = 70;
-        Scene->Camera.Aspect = (double)W / (double)H;
-        Scene->Camera.Position.X = 0.0;
-        Scene->Camera.Position.Y = 0.0;
-        Scene->Camera.Position.Z = 0.0;
-        Scene->Camera.Rotation.X = 0.0;
-        Scene->Camera.Rotation.Y = 0.0;
-        Scene->Camera.Rotation.Z = 0.0;
-        Scene->Camera.Near = 1.0;
-        Scene->Camera.Far = 1000.0;
+        Scene->SoundSys.DenySelectSound = -1;
+        Scene->SoundSys.PrimaryJumpSound = -1;
+        Scene->SoundSys.PrimaryStepSounds[0] = -1;
+        Scene->SoundSys.PrimaryStepSounds[1] = -1;
+        Scene->SoundSys.PrimaryStepSounds[2] = -1;
+        Scene->SoundSys.PrimaryStepSounds[3] = -1;
+        Scene->SoundSys.FootStepInterval = 0.3;
+        Scene->SoundSys.FootStepTimer = 0.00;
 
-        Scene->footstep_interval = 0.3;
-        Scene->footstep_timer = 0.00;
         Scene->Renderer.ZBuffer = calloc(H, W * sizeof(*Scene->Renderer.ZBuffer));
         Scene->Renderer.RGBBuffer = calloc(H, W * sizeof(*Scene->Renderer.RGBBuffer));
         if (!Scene->Renderer.ZBuffer || !Scene->Renderer.RGBBuffer)
                 TODO();
 
-        Scene->LightPos.X = 0.0;
-        Scene->LightPos.Y = 0.0;
-        Scene->LightPos.Z = 1.0;
+        Scene->Player.LightPos.X = 0.0;
+        Scene->Player.LightPos.Y = 0.0;
+        Scene->Player.LightPos.Z = 1.0;
+
+        Scene->Player.Bounds.Max = (VEC3){.X = 0.254, .Y = 0.254, .Z = 0.254};
+        Scene->Player.Bounds.Min = (VEC3){.X = -0.254, .Y = -1.5748, .Z = -0.254};
+        Scene->Player.Position.Y = 10.0;
+        Scene->Player.Velocity.Y = 0.1;
+        Scene->Player.WalkSpeed = 0.1;
+        Scene->Player.RunSpeed = 1.0;
+        Scene->Player.Speed = 0.1;
+        Scene->Player.RotSpeed = 90.0;
+        Scene->Player.Flying = true;
+        Scene->Player.IsSprinting = false;
+        Scene->Player.IsCrouching = false;
+        Scene->Player.StandingHeight = 0.254;
+        Scene->Player.CrouchingHeight = (0.254 - 1.5748) / 3 - 0.254;
+        Scene->Player.CameraOffsetY = 0.0;
+        Scene->Player.CurrentHeight = Scene->Player.StandingHeight;
+
+        Scene->Player.MaxInteraction = 2.0;
         return Scene;
 }
 
@@ -88,7 +109,6 @@ void SceneTick(SCENE **Scene)
                                 else
                                         (*Scene)->JustPressed[e.key.keysym.sym] = false;
                                 (*Scene)->Keymap[e.key.keysym.sym] = true;
-
                         }
                         break;
                 case SDL_KEYUP:
@@ -107,6 +127,10 @@ void SceneTick(SCENE **Scene)
                         break;
                 }
         }
+
+        (*Scene)->new = SDL_GetTicks();
+        (*Scene)->dt = (double)((*Scene)->new - (*Scene)->old) / 1000.0;
+        (*Scene)->old = (*Scene)->new;
 }
 
 void SceneClear(SCENE *Scene)
@@ -150,7 +174,7 @@ size_t SceneTriCount(SCENE *Scene)
         size_t tri_count = 0;
         for (size_t i = 0; i < Scene->count; ++i)
         {
-                tri_count += Scene->items[i]->tri_count;
+                tri_count += Scene->items[i]->TriCount;
         }
 
         return tri_count;
@@ -161,8 +185,8 @@ void SceneClearBuffers(SCENE *Scene)
         if (!Scene)
                 TODO();
         memset(Scene->Renderer.RGBBuffer, 0, Scene->Renderer.RendererWidth * Scene->Renderer.RendererHeight * sizeof(*Scene->Renderer.RGBBuffer));
-	for (size_t i = 0; i < (size_t)Scene->Renderer.RendererWidth * (size_t)Scene->Renderer.RendererHeight; ++i)
-	{
-		Scene->Renderer.ZBuffer[i] = -INFINITY;
-	}
+        for (size_t i = 0; i < (size_t)Scene->Renderer.RendererWidth * (size_t)Scene->Renderer.RendererHeight; ++i)
+        {
+                Scene->Renderer.ZBuffer[i] = -INFINITY;
+        }
 }

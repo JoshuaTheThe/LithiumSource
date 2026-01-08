@@ -10,8 +10,8 @@
 #include<stddef.h>
 #include<SDL2/SDL.h>
 #include<engine/types.h>
-#include <engine/scene.h>
-#include <engine/texture.h>
+#include<engine/scene.h>
+#include<engine/texture.h>
 
 void PutPixel(SCENE *Scene, double X, double Y, double Z, COLOUR Col);
 void DrawLine(SCENE *Scene, const VEC3 A, const VEC3 B, COLOUR Col);

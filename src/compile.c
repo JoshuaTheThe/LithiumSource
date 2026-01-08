@@ -54,7 +54,7 @@ void categorize_object_file(const char *file)
 
 void mkdir_for_file(const char *file)
 {
-        char dir[MAX_PATH];
+        char dir[MAX_PATH + 1];
         strncpy(dir, file, MAX_PATH);
         char *last_slash = strrchr(dir, '/');
         if (last_slash)
@@ -62,7 +62,7 @@ void mkdir_for_file(const char *file)
                 *last_slash = 0;
                 char cmd[MAX_PATH + 16];
                 snprintf(cmd, sizeof(cmd), "mkdir -p %s", dir);
-                system(cmd);
+                (void)system(cmd);
         }
 }
 
@@ -137,9 +137,7 @@ void list_files_recursive(const char *dir)
                 {
                         size_t len = strlen(path);
                         if (len > 2 && strcmp(path + len - 2, ".c") == 0)
-                                compile_file(path, "gcc", "-I./src", 1);
-                        else if (len > 2 && strcmp(path + len - 2, ".s") == 0)
-                                compile_file(path, "clang", NULL, 0);
+                                compile_file(path, "clang", "-I./src", 1);
                 }
         }
 
@@ -148,8 +146,8 @@ void list_files_recursive(const char *dir)
 
 void compile(void)
 {
-        system("mkdir -p obj");
-        system("mkdir -p bin");
+        (void)system("mkdir -p obj");
+        (void)system("mkdir -p bin");
 
         file_array_init(&all_object_files);
         file_array_init(&engine_files);
@@ -190,11 +188,11 @@ void compile(void)
                 fprintf(stderr, "Linking failed!\n");
                 exit(1);
         }
-        system("rm bin/main");
+        (void)system("rm bin/main");
 #ifdef _WIN32
-        system("cp bin/main.tmp.exe bin/main.exe");
+        (void)system("cp bin/main.tmp.exe bin/main.exe");
 #else
-        system("cp bin/main.tmp bin/main");
+        (void)system("cp bin/main.tmp bin/main");
 #endif
         printf("Linking successful: bin/main\n");
 

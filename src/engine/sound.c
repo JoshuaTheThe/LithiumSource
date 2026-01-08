@@ -2,9 +2,9 @@
 
 size_t FindEmptySound(SCENE *Scene)
 {
-        for (size_t i = 0; i < sizeof(Scene->Sounds) / sizeof(Scene->Sounds[0]); ++i)
+        for (size_t i = 0; i < sizeof(Scene->SoundSys.Sounds) / sizeof(Scene->SoundSys.Sounds[0]); ++i)
         {
-                if (Scene->Sounds[i].Valid)
+                if (Scene->SoundSys.Sounds[i].Valid)
                         continue;
                 return i;
         }
@@ -20,12 +20,12 @@ size_t LoadSound(SCENE *Scene, const char *Path)
                 TODO();
         snprintf(FullPath, sz, "%s/%s", ProgramPath, Path);
         size_t idx = FindEmptySound(Scene);
-        Scene->Sounds[idx].Sample = Mix_LoadWAV(FullPath);
-        Scene->Sounds[idx].Valid = true;
-        Scene->Sounds[idx].Playing = false;
-        Scene->Sounds[idx].Channel = -1;
+        Scene->SoundSys.Sounds[idx].Sample = Mix_LoadWAV(FullPath);
+        Scene->SoundSys.Sounds[idx].Valid = true;
+        Scene->SoundSys.Sounds[idx].Playing = false;
+        Scene->SoundSys.Sounds[idx].Channel = -1;
 
-        if (!Scene->Sounds[idx].Sample)
+        if (!Scene->SoundSys.Sounds[idx].Sample)
         {
                 TODO();
         }
@@ -36,36 +36,36 @@ size_t LoadSound(SCENE *Scene, const char *Path)
 
 void CleanupSound(SCENE *Scene)
 {
-        for (size_t i = 0; i < sizeof(Scene->Sounds) / sizeof(Scene->Sounds[0]); ++i)
+        for (size_t i = 0; i < sizeof(Scene->SoundSys.Sounds) / sizeof(Scene->SoundSys.Sounds[0]); ++i)
         {
-                if (!Scene->Sounds[i].Valid || !Scene->Sounds[i].Sample)
+                if (!Scene->SoundSys.Sounds[i].Valid || !Scene->SoundSys.Sounds[i].Sample)
                         continue;
-                Mix_FreeChunk(Scene->Sounds[i].Sample);
-                Scene->Sounds[i].Sample = NULL;
-                Scene->Sounds[i].Valid = false;
-                Scene->Sounds[i].Playing = false;
-                Scene->Sounds[i].Channel = -1;
+                Mix_FreeChunk(Scene->SoundSys.Sounds[i].Sample);
+                Scene->SoundSys.Sounds[i].Sample = NULL;
+                Scene->SoundSys.Sounds[i].Valid = false;
+                Scene->SoundSys.Sounds[i].Playing = false;
+                Scene->SoundSys.Sounds[i].Channel = -1;
         }
         Mix_CloseAudio();
 }
 
 void PlaySound(SCENE *Scene, size_t SoundIdx)
 {
-        if (SoundIdx > sizeof(Scene->Sounds) / sizeof(Scene->Sounds[0]) || !Scene->Sounds[SoundIdx].Sample || !Scene->Sounds[SoundIdx].Valid)
+        if (SoundIdx > sizeof(Scene->SoundSys.Sounds) / sizeof(Scene->SoundSys.Sounds[0]) || !Scene->SoundSys.Sounds[SoundIdx].Sample || !Scene->SoundSys.Sounds[SoundIdx].Valid)
                 TODO();
-        int channel = Mix_PlayChannel(-1, Scene->Sounds[SoundIdx].Sample, 0);
-        Scene->Sounds[SoundIdx].Playing = true;
-        Scene->Sounds[SoundIdx].Channel = channel;
+        int channel = Mix_PlayChannel(-1, Scene->SoundSys.Sounds[SoundIdx].Sample, 0);
+        Scene->SoundSys.Sounds[SoundIdx].Playing = true;
+        Scene->SoundSys.Sounds[SoundIdx].Channel = channel;
 }
 
 void UpdateSounds(SCENE *Scene)
 {
-        for (size_t i = 0; i < sizeof(Scene->Sounds) / sizeof(Scene->Sounds[0]); ++i)
+        for (size_t i = 0; i < sizeof(Scene->SoundSys.Sounds) / sizeof(Scene->SoundSys.Sounds[0]); ++i)
         {
-                if (!Scene->Sounds[i].Valid || Scene->Sounds[i].Channel == -1)
+                if (!Scene->SoundSys.Sounds[i].Valid || Scene->SoundSys.Sounds[i].Channel == -1)
                         continue;
-                Scene->Sounds[i].Playing = Mix_Playing(Scene->Sounds[i].Channel) != 0;
-                if (!Scene->Sounds[i].Playing)
-                        Scene->Sounds[i].Channel = -1;
+                Scene->SoundSys.Sounds[i].Playing = Mix_Playing(Scene->SoundSys.Sounds[i].Channel) != 0;
+                if (!Scene->SoundSys.Sounds[i].Playing)
+                        Scene->SoundSys.Sounds[i].Channel = -1;
         }
 }
