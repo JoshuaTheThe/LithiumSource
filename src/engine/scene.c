@@ -73,9 +73,9 @@ SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
         Scene->Player.Bounds.Max = (VEC3){.X = 0.254, .Y = 0.254, .Z = 0.254};
         Scene->Player.Bounds.Min = (VEC3){.X = -0.254, .Y = -1.5748, .Z = -0.254};
         Scene->Player.Velocity.Y = 0.1;
-        Scene->Player.WalkSpeed = 0.1;
-        Scene->Player.RunSpeed = 1.0;
-        Scene->Player.Speed = 0.1;
+        Scene->Player.WalkSpeed = 0.635 / 4;
+        Scene->Player.RunSpeed = 0.635 / 2;
+        Scene->Player.Speed = Scene->Player.WalkSpeed;
         Scene->Player.RotSpeed = 90.0;
         Scene->Player.Flying = true;
         Scene->Player.IsSprinting = false;
