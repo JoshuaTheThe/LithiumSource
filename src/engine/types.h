@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define __VER__ "0.1.0" // LETS FUCKING GO
+#define __VER__ "0.1.1" // LETS FUCKING GO
 
 #define da_append(xs, x)                                                                           \
         do                                                                                         \
@@ -117,7 +117,7 @@ typedef struct
         VEC3 LightPos;
         double FOV, Aspect, Near, Far;
         BOUNDS Bounds;
-        
+
         bool Flying;
         bool Grounded;
         bool IsCrouching;
@@ -236,6 +236,28 @@ static inline VEC3 CrossProdVec3(const VEC3 *const a, const VEC3 *const b)
         v.Y = a->Z * b->X - a->X * b->Z;
         v.Z = a->X * b->Y - a->Y * b->X;
         return v;
+}
+
+static inline VEC3 RotatePoint(const VEC3 *point, const VEC3 *rotation)
+{
+        double rx = rotation->X * M_PI / 180.0;
+        double ry = rotation->Y * M_PI / 180.0;
+        double rz = rotation->Z * M_PI / 180.0;
+
+        double sinX = sin(rx), cosX = cos(rx);
+        double sinY = sin(ry), cosY = cos(ry);
+        double sinZ = sin(rz), cosZ = cos(rz);
+
+        double y1 = point->Y * cosX - point->Z * sinX;
+        double z1 = point->Y * sinX + point->Z * cosX;
+
+        double x2 = point->X * cosY + z1 * sinY;
+        double z2 = -point->X * sinY + z1 * cosY;
+
+        double x3 = x2 * cosZ - y1 * sinZ;
+        double y3 = x2 * sinZ + y1 * cosZ;
+
+        return (VEC3){x3, y3, z2};
 }
 
 extern char *ProgramPath;

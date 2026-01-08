@@ -20,25 +20,30 @@ static BOUNDS GetPlayerBounds(SCENE *Scene)
         return b;
 }
 
-static BOUNDS GetTriangleBounds(const TRI3D *Tri, VEC3 Origin)
+static inline BOUNDS GetTriangleBounds(const TRI3D *Tri, VEC3 Origin, VEC3 Rotation)
 {
         BOUNDS b;
-        VEC3 Epsilon = (VEC3){.X = 0.015, .Y = 0.015, .Z = 0.015};
-        b.Min = b.Max = Tri->p[0];
+        VEC3 Epsilon = (VEC3){.X = 0.001, .Y = 0.001, .Z = 0.001};
+
+        VEC3 p0 = RotatePoint(&Tri->p[0], &Rotation);
+        p0 = AddVec3(&p0, &Origin);
+
+        b.Min = b.Max = p0;
 
         for (int i = 1; i < 3; i++)
         {
-                b.Min.X = fmin(b.Min.X, Tri->p[i].X);
-                b.Min.Y = fmin(b.Min.Y, Tri->p[i].Y);
-                b.Min.Z = fmin(b.Min.Z, Tri->p[i].Z);
+                VEC3 p = RotatePoint(&Tri->p[i], &Rotation);
+                p = AddVec3(&p, &Origin);
 
-                b.Max.X = fmax(b.Max.X, Tri->p[i].X);
-                b.Max.Y = fmax(b.Max.Y, Tri->p[i].Y);
-                b.Max.Z = fmax(b.Max.Z, Tri->p[i].Z);
+                b.Min.X = fmin(b.Min.X, p.X);
+                b.Min.Y = fmin(b.Min.Y, p.Y);
+                b.Min.Z = fmin(b.Min.Z, p.Z);
+
+                b.Max.X = fmax(b.Max.X, p.X);
+                b.Max.Y = fmax(b.Max.Y, p.Y);
+                b.Max.Z = fmax(b.Max.Z, p.Z);
         }
 
-        b.Min = AddVec3(&b.Min, &Origin);
-        b.Max = AddVec3(&b.Max, &Origin);
         b.Min = SubVec3(&b.Min, &Epsilon);
         b.Max = AddVec3(&b.Max, &Epsilon);
 
@@ -62,7 +67,7 @@ static bool ResolveCollision(SCENE *Scene, Mesh3D *Mesh)
         bool collision = false;
         for (size_t i = 0; i < Mesh->TriCount; i++)
         {
-                BOUNDS tri = GetTriangleBounds(&Mesh->Tris[i], Mesh->Origin);
+                BOUNDS tri = GetTriangleBounds(&Mesh->Tris[i], Mesh->Origin, Mesh->Rotation);
 
                 if (!AABBOverlap(player, tri))
                         continue;
