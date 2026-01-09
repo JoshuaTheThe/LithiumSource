@@ -3,7 +3,11 @@
 void Trigger(SCENE *Scene, ENTITY *Self, VEC3 Overlap)
 {
         if (Self->static_data[0] == false)
+        {
+                Self->static_data[1] = LoadSound(Scene, "assets/ahfreeman.wav");
+                PlaySound(Scene, Self->static_data[1]);
                 printf("INFO: Triggered %p in %p with an overlap of (%f, %f, %f)\n", Self, Scene, Overlap.X, Overlap.Y, Overlap.Z);
+        }
         Self->static_data[0] = true;
 }
 
@@ -19,18 +23,20 @@ int main(int Count, char **Arguments)
 
         size_t obj0 = LithiumLoadObject(Scene, "assets/map.obj");
         size_t obj1 = LithiumLoadObject(Scene, "assets/guy.obj");
-        size_t obj2 = LithiumLoadObject(Scene, "assets/plane.obj");
+        size_t obj2 = LithiumLoadObject(Scene, "assets/cube.obj"); /* Our Trigger Object */
         LiObj(Scene, obj0)->InteractionBounds.Min.X = 0;
         LiObj(Scene, obj0)->InteractionBounds.Min.Y = 0;
         LiObj(Scene, obj0)->InteractionBounds.Min.Z = 0;
         LiObj(Scene, obj0)->InteractionBounds.Max.X = 0;
         LiObj(Scene, obj0)->InteractionBounds.Max.Y = 0;
         LiObj(Scene, obj0)->InteractionBounds.Max.Z = 0;
+        LiObj(Scene, obj1)->Origin.X = -5;
         LiObj(Scene, obj2)->Rotation.Z = 90;
         LiObj(Scene, obj2)->Rotation.Y = -90;
-        LiObj(Scene, obj2)->Origin.X = 4;
+        LiObj(Scene, obj2)->Origin = LiObj(Scene, obj1)->Origin;
         LiObj(Scene, obj2)->CustomCollisionBehaviour = Trigger;
-        ScaleMesh(LiObj(Scene, obj2), 10.0);
+        LiObj(Scene, obj2)->IsVisible = false;
+        ScaleMesh(LiObj(Scene, obj2), 2.0);
 
         //size_t obj1 = LithiumLoadObject(Scene, "assets/long plane.obj");
         //size_t obj2 = LithiumLoadObject(Scene, "assets/long plane.obj");
@@ -44,18 +50,14 @@ int main(int Count, char **Arguments)
         //LiObj(Scene, obj2)->Origin.Z = 5.0;
         //LiObj(Scene, obj3)->Origin.Z = 5.0;
         //LiObj(Scene, obj4)->Origin.Z = 5.0;
-//
         //LiObj(Scene, obj1)->Origin.Y = 0.0;
         //LiObj(Scene, obj2)->Origin.Y = 2.0;
         //LiObj(Scene, obj3)->Origin.Y = 1.0;
         //LiObj(Scene, obj4)->Origin.Y = 1.0;
-//
         //LiObj(Scene, obj3)->Rotation.Z = 90.0;
         //LiObj(Scene, obj4)->Rotation.Z = 90.0;
-//
         //LiObj(Scene, obj3)->Origin.X = 1.0;
         //LiObj(Scene, obj4)->Origin.X = -1.0;
-        //
         Texture->repeat = true;
         Texture->scalex = 10;
         Texture->scaley = 10;

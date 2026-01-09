@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define __VER__ "0.1.5"
+#define __VER__ "0.1.6"
 
 #define da_append(xs, x)                                                                           \
         do                                                                                         \
@@ -110,6 +110,7 @@ typedef struct ENTITY
         BOUNDS InteractionBounds;
         VEC3 Origin, Scale, Rotation;
         TRI3D *Tris;
+        bool IsVisible;
         size_t TriCount;
         size_t InteractSound;
         void (*Interact)(struct ENTITY *Self);

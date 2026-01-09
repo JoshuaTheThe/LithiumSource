@@ -24,6 +24,7 @@ ENTITY *InitMesh(SCENE *Scene, size_t triCount)
         mesh->Interact = DefaultInteractCallback;
         mesh->PhysicsIteration = DefaultPhysicsCallback;
         mesh->InteractSound = Scene->SoundSys.DenySelectSound;
+        mesh->IsVisible = true;
 
         memset(mesh->static_data, 0, sizeof(mesh->static_data));
         return mesh;

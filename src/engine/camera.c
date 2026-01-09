@@ -458,6 +458,8 @@ size_t DrawScene(SCENE *Scene)
         for (size_t i = 0; i < Scene->count; ++i)
         {
                 const ENTITY *Mesh = Scene->items[i];
+                if (!Mesh->IsVisible)
+                        continue;
                 const Mat4x4 WorldViewMatrix = MakeWorldMat(
                     Mesh, cameraForward, cameraRight, cameraUp, position);
 
