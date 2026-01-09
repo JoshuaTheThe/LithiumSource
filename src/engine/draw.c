@@ -29,7 +29,7 @@ void PutPixel(SCENE *Scene, double X, double Y, double Z, COLOUR Col)
         if (X < 0.0 || X >= (double)Scene->Renderer.RendererWidth || Y < 0.0 || Y >= (double)Scene->Renderer.RendererHeight)
                 return;
         size_t index = (int)Y * Scene->Renderer.RendererWidth + (int)X;
-        if (Scene->Renderer.ZBuffer[index] < Z)
+        if (Scene->Renderer.ZBuffer[index] < Z && !(Col.r == 255 && Col.g == 0 && Col.b == 255 && Col.a == 255))
         {
                 Scene->Renderer.ZBuffer[index] = Z;
                 float alpha = (float)Col.a / 255.0f;
