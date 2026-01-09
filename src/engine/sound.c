@@ -40,6 +40,7 @@ void CleanupSound(SCENE *Scene)
         {
                 if (!Scene->SoundSys.Sounds[i].Valid || !Scene->SoundSys.Sounds[i].Sample)
                         continue;
+                printf("INFO: Free'd Sound at %p in %p\n", Scene->SoundSys.Sounds[i].Sample, Scene);
                 Mix_FreeChunk(Scene->SoundSys.Sounds[i].Sample);
                 Scene->SoundSys.Sounds[i].Sample = NULL;
                 Scene->SoundSys.Sounds[i].Valid = false;

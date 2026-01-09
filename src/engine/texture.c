@@ -43,7 +43,7 @@ void FreeTextureData(TEXTURE *tex)
         {
                 free(tex->pixels);
                 free(tex);
-                printf("INFO: Deleted Texture at %p\n", tex);
+                printf("INFO: Free'd Texture at %p\n", tex);
         }
 }
 

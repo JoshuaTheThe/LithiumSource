@@ -5,6 +5,7 @@ char *ProgramPath = NULL;
 
 SCENE *LithiumInit(int argc, char **argv)
 {
+        srand(time(NULL));
         const int width = 200;
         const int height = 200;
         const int scale = 4;
@@ -41,8 +42,8 @@ SCENE *LithiumInit(int argc, char **argv)
 
 void LithiumEnd(SCENE *Scene)
 {
-        SceneEnd(Scene, false);
-        SceneEnd(NULL, true);
+        CleanupSound(Scene);
+        SceneEnd(Scene, true);
         free(ProgramPath);
 }
 
@@ -201,7 +202,7 @@ void LithiumUpdate(SCENE *Scene)
                 if (Hit && Hit->Interact)
                 {
                         printf("INFO: Interacted with object at %p\n", Hit);
-                        Hit->Interact(Hit);
+                        Hit->Interact(Hit, Scene);
                         PlaySound(Scene, Hit->InteractSound);
                 }
                 else

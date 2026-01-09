@@ -57,6 +57,99 @@ static bool AABBOverlap(BOUNDS a, BOUNDS b)
                 a.Max.Z > b.Min.Z && a.Min.Z < b.Max.Z);
 }
 
+static bool ResolveEntityCollision(SCENE *Scene, ENTITY *A, ENTITY *B)
+{
+        if (!A || !B || !A->IsVisible || !B->IsVisible || (A == B))
+                return false;
+
+        BOUNDS boundsA = A->InteractionBounds;
+        boundsA.Min = AddVec3(&boundsA.Min, &A->Origin);
+        boundsA.Max = AddVec3(&boundsA.Max, &A->Origin);
+
+        bool collision = false;
+
+        for (size_t i = 0; i < B->TriCount; i++)
+        {
+                BOUNDS tri = GetTriangleBounds(&B->Tris[i], B->Origin, B->Rotation);
+
+                if (!AABBOverlap(boundsA, tri))
+                        continue;
+
+                double overlapX = 0.0, overlapY = 0.0, overlapZ = 0.0;
+                double left = 0.0, right = 0.0, top = 0.0, bottom = 0.0, front = 0.0, back = 0.0;
+
+                if (boundsA.Max.X > tri.Min.X && boundsA.Min.X < tri.Max.X)
+                {
+                        left = tri.Max.X - boundsA.Min.X;
+                        right = boundsA.Max.X - tri.Min.X;
+                        overlapX = (left < right) ? left : -right;
+                }
+
+                if (boundsA.Max.Y > tri.Min.Y && boundsA.Min.Y < tri.Max.Y)
+                {
+                        bottom = tri.Max.Y - boundsA.Min.Y;
+                        top = boundsA.Max.Y - tri.Min.Y;
+                        overlapY = (bottom < top) ? bottom : -top;
+                }
+
+                if (boundsA.Max.Z > tri.Min.Z && boundsA.Min.Z < tri.Max.Z)
+                {
+                        front = tri.Max.Z - boundsA.Min.Z;
+                        back = boundsA.Max.Z - tri.Min.Z;
+                        overlapZ = (front < back) ? front : -back;
+                }
+
+                double minOverlap = fmin(fmin(fabs(overlapX), fabs(overlapY)), fabs(overlapZ));
+
+                if (minOverlap <= 0.0)
+                        continue;
+
+                VEC3 Overlap = {.X = overlapX, .Y = overlapY, .Z = overlapZ};
+                collision = true;
+
+                if (B->CustomCollisionBehaviour)
+                {
+                        B->CustomCollisionBehaviour(B, Scene, Overlap);
+                }
+                else
+                {
+                        if (fabs(overlapX) == minOverlap)
+                        {
+                                A->Origin.X += overlapX * 0.5;
+                                B->Origin.X -= overlapX * 0.5;
+
+                                if (fabs(A->Velocity.X) > 0.1)
+                                        A->Velocity.X = 0;
+                        }
+                        else if (fabs(overlapY) == minOverlap)
+                        {
+                                A->Origin.Y += overlapY * 0.5;
+                                B->Origin.Y -= overlapY * 0.5;
+
+                                if (overlapY > 0)
+                                {
+                                        if (A->Velocity.Y < 0)
+                                        {
+                                                A->Velocity.Y = 0;
+                                                A->IsGrounded = true;
+                                        }
+                                        else
+                                                A->IsGrounded = false;
+                                }
+                        }
+                        else if (fabs(overlapZ) == minOverlap)
+                        {
+                                A->Origin.Z += overlapZ * 0.5;
+                                B->Origin.Z -= overlapZ * 0.5;
+
+                                if (fabs(A->Velocity.Z) > 0.1)
+                                        A->Velocity.Z = 0;
+                        }
+                }
+        }
+
+        return collision;
+}
 static bool ResolveCollision(SCENE *Scene, ENTITY *Mesh)
 {
         BOUNDS player = GetPlayerBounds(Scene);
@@ -141,6 +234,8 @@ static bool ResolveCollision(SCENE *Scene, ENTITY *Mesh)
 
 void PhysicsTick(SCENE *Scene)
 {
+        if (!Scene)
+                return;
         Scene->Player.Velocity.X -= Scene->Player.Velocity.X * FRICTION * Scene->dt;
         Scene->Player.Velocity.Z -= Scene->Player.Velocity.Z * FRICTION * Scene->dt;
         Scene->Player.Velocity.Y -= GRAVITY * Scene->dt;
@@ -179,5 +274,26 @@ void PhysicsTick(SCENE *Scene)
                 Scene->Player.Position.Y += dy;
                 for (size_t j = 0; j < Scene->count; ++j)
                         ResolveCollision(Scene, Scene->items[j]);
+        }
+
+        for (size_t i = 0; i < Scene->count; ++i)
+        {
+                if (Scene->items[i]->IsStatic)
+                        continue;
+                Scene->items[i]->Velocity.X -= Scene->items[i]->Velocity.X * FRICTION * Scene->dt;
+                Scene->items[i]->Velocity.Z -= Scene->items[i]->Velocity.Z * FRICTION * Scene->dt;
+                Scene->items[i]->Velocity.Y -= GRAVITY * Scene->dt;
+                if (Scene->items[i]->Velocity.Y < -TERMINAL_VELOCITY)
+                        Scene->items[i]->Velocity.Y = -TERMINAL_VELOCITY;
+
+                Scene->items[i]->Origin.X += Scene->items[i]->Velocity.X * Scene->dt;
+                for (size_t j = 0; j < Scene->count; ++j)
+                        ResolveEntityCollision(Scene, Scene->items[i], Scene->items[j]);
+                Scene->items[i]->Origin.Y += Scene->items[i]->Velocity.Y * Scene->dt;
+                for (size_t j = 0; j < Scene->count; ++j)
+                        ResolveEntityCollision(Scene, Scene->items[i], Scene->items[j]);
+                Scene->items[i]->Origin.Z += Scene->items[i]->Velocity.Z * Scene->dt;
+                for (size_t j = 0; j < Scene->count; ++j)
+                        ResolveEntityCollision(Scene, Scene->items[i], Scene->items[j]);
         }
 }

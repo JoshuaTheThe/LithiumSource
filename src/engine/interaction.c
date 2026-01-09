@@ -29,7 +29,7 @@ ENTITY *CastRay(SCENE *Scene, RAY3D Ray)
         for (size_t i = 0; i < Scene->count; i++)
         {
                 ENTITY *mesh = Scene->items[i];
-                if (!mesh)
+                if (!mesh || !mesh->IsInteractable)
                         continue;
 
                 VEC3 local_pos, local_dir;

@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define __VER__ "0.1.6"
+#define __VER__ "0.1.7"
 
 #define da_append(xs, x)                                                                           \
         do                                                                                         \
@@ -108,12 +108,12 @@ typedef struct
 typedef struct ENTITY
 {
         BOUNDS InteractionBounds;
-        VEC3 Origin, Scale, Rotation;
+        VEC3 Origin, Scale, Rotation, Velocity;
         TRI3D *Tris;
-        bool IsVisible;
+        bool IsVisible, IsInteractable, IsStatic, IsCollidable, IsGrounded;
         size_t TriCount;
         size_t InteractSound;
-        void (*Interact)(struct ENTITY *Self);
+        void (*Interact)(struct ENTITY *Self, SCENE *Scene);
         void (*PhysicsIteration)(struct ENTITY *Self, SCENE *Scene);
         void (*CustomCollisionBehaviour)(struct ENTITY *Self, SCENE *Scene, VEC3 Overlap);
         int static_data[512];
@@ -196,6 +196,7 @@ typedef struct SCENE
         size_t count, capacity;
         size_t new, old;
         double dt;
+        bool Running;
 } SCENE;
 
 static inline float Clamp(float v, float min, float max)

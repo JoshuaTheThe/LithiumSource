@@ -88,6 +88,7 @@ SCENE *SceneInit(const char *Title, int X, int Y, int W, int H, int SCALE)
         Scene->Player.CurrentHeight = Scene->Player.StandingHeight;
 
         Scene->Player.MaxInteraction = 2.0;
+        Scene->Running = true;
         return Scene;
 }
 
@@ -120,9 +121,7 @@ void SceneTick(SCENE **Scene)
                         }
                         break;
                 case SDL_QUIT:
-                        CleanupSound(*Scene);
-                        SceneEnd(*Scene, false);
-                        (*Scene) = NULL;
+                        (*Scene)->Running = false;
                         return;
                 default:
                         break;
