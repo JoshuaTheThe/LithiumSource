@@ -47,6 +47,7 @@ void DelMesh(ENTITY *Mesh)
 
         free(Mesh->Tris);
         free(Mesh);
+        printf("INFO: Free'd ENTITY at %p\n", Mesh);
 }
 
 bool PlayerCollides(SCENE *Scene, TRI3D *Tri, VEC3 Origin)
