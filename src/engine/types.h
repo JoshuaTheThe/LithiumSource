@@ -73,8 +73,10 @@ typedef enum
 typedef struct TEXTURE
 {
         uint32_t *pixels;
+        double scalex, scaley;
         int width, height;
         int pitch;
+        bool repeat;
 } TEXTURE;
 
 typedef struct
@@ -112,6 +114,8 @@ typedef struct ENTITY
         size_t InteractSound;
         void (*Interact)(struct ENTITY *Self);
         void (*PhysicsIteration)(struct ENTITY *Self, SCENE *Scene);
+        void (*CustomCollisionBehaviour)(struct ENTITY *Self, SCENE *Scene, VEC3 Overlap);
+        int static_data[512];
 } ENTITY;
 
 typedef struct

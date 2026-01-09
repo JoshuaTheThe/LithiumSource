@@ -100,32 +100,39 @@ static bool ResolveCollision(SCENE *Scene, ENTITY *Mesh)
                         continue;
                 }
 
+                VEC3 Overlap = {.X = overlapX, .Y = overlapY, .Z = overlapZ};
+
                 collision = true;
-                if (fabs(overlapX) == minOverlap)
+                if (Mesh->CustomCollisionBehaviour)
+                        Mesh->CustomCollisionBehaviour(Mesh, Scene, Overlap);
+                else
                 {
-                        Scene->Player.Position.X += overlapX;
-                        if (fabs(Scene->Player.Velocity.X) > 0.1)
-                                Scene->Player.Velocity.X = 0;
-                }
-                else if (fabs(overlapY) == minOverlap)
-                {
-                        Scene->Player.Position.Y += overlapY;
-                        // Only stop vertical velocity if hitting from above or below
-                        if (overlapY > 0 && Scene->Player.Velocity.Y < 0) // Landing on ground
+
+                        if (fabs(overlapX) == minOverlap)
                         {
-                                Scene->Player.Velocity.Y = 0;
-                                Scene->Player.Grounded = true;
+                                Scene->Player.Position.X += overlapX;
+                                if (fabs(Scene->Player.Velocity.X) > 0.1)
+                                        Scene->Player.Velocity.X = 0;
                         }
-                        else if (overlapY < 0 && Scene->Player.Velocity.Y > 0) // Hitting ceiling
+                        else if (fabs(overlapY) == minOverlap)
                         {
-                                Scene->Player.Velocity.Y = 0;
+                                Scene->Player.Position.Y += overlapY;
+                                if (overlapY > 0 && Scene->Player.Velocity.Y < 0)
+                                {
+                                        Scene->Player.Velocity.Y = 0;
+                                        Scene->Player.Grounded = true;
+                                }
+                                else if (overlapY < 0 && Scene->Player.Velocity.Y > 0)
+                                {
+                                        Scene->Player.Velocity.Y = 0;
+                                }
                         }
-                }
-                else if (fabs(overlapZ) == minOverlap)
-                {
-                        Scene->Player.Position.Z += overlapZ;
-                        if (fabs(Scene->Player.Velocity.Z) > 0.1)
-                                Scene->Player.Velocity.Z = 0;
+                        else if (fabs(overlapZ) == minOverlap)
+                        {
+                                Scene->Player.Position.Z += overlapZ;
+                                if (fabs(Scene->Player.Velocity.Z) > 0.1)
+                                        Scene->Player.Velocity.Z = 0;
+                        }
                 }
         }
 
