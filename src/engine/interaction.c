@@ -21,14 +21,14 @@ static inline VEC3 RotateVectorInverse(const VEC3 *v, const VEC3 *rotation)
             v->X * m[0][2] + v->Y * m[1][2] + v->Z * m[2][2]};
 }
 
-Mesh3D *CastRay(SCENE *Scene, RAY3D Ray)
+ENTITY *CastRay(SCENE *Scene, RAY3D Ray)
 {
-        Mesh3D *closest_mesh = NULL;
+        ENTITY *closest_mesh = NULL;
         double closest_t = INFINITY;
 
         for (size_t i = 0; i < Scene->count; i++)
         {
-                Mesh3D *mesh = Scene->items[i];
+                ENTITY *mesh = Scene->items[i];
                 if (!mesh)
                         continue;
 

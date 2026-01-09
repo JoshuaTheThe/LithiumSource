@@ -16,6 +16,7 @@
 #include <engine/camera.h>
 #include <engine/types.h>
 #include <engine/scene.h>
+#include <engine/ui.h>
 #include <todo.h>
 
 static Mat4x4 ProjectionMatrix = {{{0}}};
@@ -195,8 +196,9 @@ static COLOUR GetCol(COLOUR col, double lum)
         int R = col.r; //(int)(256.0 * (mappedLum * ((double)col.r / 256.0)));
         int G = col.g; //(int)(256.0 * (mappedLum * ((double)col.g / 256.0)));
         int B = col.b; //(int)(256.0 * (mappedLum * ((double)col.b / 256.0)));
+        int A = col.a; //(int)(256.0 * (mappedLum * ((double)col.b / 256.0)));
 
-        return (COLOUR){R, G, B};
+        return (COLOUR){R, G, B, A};
 }
 
 static VEC3 IntersectPlane(
@@ -287,14 +289,13 @@ static int ClipTriangleNearPlane(
 
         if (nInside == 2 && nOutside == 1)
         {
+                double t0 = (near - inside[0]->Z) / (outside[0]->Z - inside[0]->Z);
+                double t1 = (near - inside[1]->Z) / (outside[0]->Z - inside[1]->Z);
+
                 out1->p[0] = *inside[0];
                 out1->uv[0] = *uvInside[0];
                 out1->p[1] = *inside[1];
                 out1->uv[1] = *uvInside[1];
-
-                double t0 = (near - inside[0]->Z) / (outside[0]->Z - inside[0]->Z);
-                double t1 = (near - inside[1]->Z) / (outside[0]->Z - inside[1]->Z);
-
                 out1->p[2] = IntersectPlane(&planePoint, &planeNormal, inside[0], outside[0]);
                 out1->uv[2] = IntersectUV(*uvInside[0], *uvOutside[0], t0);
 
@@ -402,7 +403,7 @@ static Mat4x4 MakeViewMat(VEC3 cameraForward, VEC3 cameraRight, VEC3 cameraUp, V
         return mat;
 }
 
-static Mat4x4 MakeWorldMat(const Mesh3D *const Mesh, VEC3 cameraForward, VEC3 cameraRight, VEC3 cameraUp, VEC3 cameraPos)
+static Mat4x4 MakeWorldMat(const ENTITY *const Mesh, VEC3 cameraForward, VEC3 cameraRight, VEC3 cameraUp, VEC3 cameraPos)
 {
         Mat4x4 RotMatrixX = MakeRotationX(DEG_TO_RAD(Mesh->Rotation.X));
         Mat4x4 RotMatrixY = MakeRotationY(DEG_TO_RAD(Mesh->Rotation.Y));
@@ -434,7 +435,7 @@ static Mat4x4 MakeWorldMat(const Mesh3D *const Mesh, VEC3 cameraForward, VEC3 ca
 size_t DrawScene(SCENE *Scene)
 {
         if (!Scene)
-                TODO();
+                return 0;
         SDL_SetRenderDrawColor(Scene->Renderer.Renderer, 0, 0, 0, 255);
         SDL_RenderClear(Scene->Renderer.Renderer);
         SceneClearBuffers(Scene);
@@ -456,7 +457,7 @@ size_t DrawScene(SCENE *Scene)
 
         for (size_t i = 0; i < Scene->count; ++i)
         {
-                const Mesh3D *Mesh = Scene->items[i];
+                const ENTITY *Mesh = Scene->items[i];
                 const Mat4x4 WorldViewMatrix = MakeWorldMat(
                     Mesh, cameraForward, cameraRight, cameraUp, position);
 
@@ -472,6 +473,15 @@ size_t DrawScene(SCENE *Scene)
                                 out[k].Texture = tri.Texture;
                                 DrawTriWTex(Scene, out[k]);
                         }
+                }
+        }
+
+        for (size_t i = 0; i < Scene->UXObjects.count; ++i)
+        {
+                const UXOBJECT *Object = Scene->UXObjects.items[i];
+                if (Object)
+                {
+                        LithiumDrawUXObject(Scene, Object);
                 }
         }
 

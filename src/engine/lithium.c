@@ -200,7 +200,7 @@ void LithiumUpdate(SCENE *Scene)
                     cos(pitch) * cos(yaw)};
                 Ray.InitialDir = NormaliseVec3(&direction);
                 Ray.InitialPos = Scene->Player.Position;
-                Mesh3D *Hit = CastRay(Scene, Ray);
+                ENTITY *Hit = CastRay(Scene, Ray);
                 if (Hit && Hit->Interact)
                 {
                         printf("INFO: Interacted with object at %p\n", Hit);
@@ -214,12 +214,20 @@ void LithiumUpdate(SCENE *Scene)
                 Scene->JustPressed['e'] = false;
         }
 
+        for (size_t i = 0; i < Scene->count; ++i)
+        {
+                if (Scene->items[i] && Scene->items[i]->PhysicsIteration)
+                {
+                        Scene->items[i]->PhysicsIteration(Scene->items[i], Scene);
+                }
+        }
+
         LithiumPlayerUpdateHeight(&Scene->Player, Scene->dt);
         Scene->SoundSys.FootStepTimer -= Scene->dt;
         UpdateSounds(Scene);
 }
 
-static VEC3 FindMeshMin(Mesh3D *Mesh)
+static VEC3 FindMeshMin(ENTITY *Mesh)
 {
         VEC3 Min = {0};
         Min.X = Mesh->Tris[0].p[0].X * Mesh->Scale.X;
@@ -238,7 +246,7 @@ static VEC3 FindMeshMin(Mesh3D *Mesh)
         return Min;
 }
 
-static VEC3 FindMeshMax(Mesh3D *Mesh)
+static VEC3 FindMeshMax(ENTITY *Mesh)
 {
         VEC3 Max = {0};
         Max.X = Mesh->Tris[0].p[0].X * Mesh->Scale.X;
@@ -259,7 +267,7 @@ static VEC3 FindMeshMax(Mesh3D *Mesh)
 
 size_t LithiumLoadObject(SCENE *Scene, char *Path)
 {
-        Mesh3D *Object = InitMesh(Scene, 0);
+        ENTITY *Object = InitMesh(Scene, 0);
         LoadMeshFromFile(Path, Object);
         if (!Object || Object->TriCount == 0)
         {
@@ -274,7 +282,7 @@ size_t LithiumLoadObject(SCENE *Scene, char *Path)
         return Scene->count - 1;
 }
 
-Mesh3D *LiObj(SCENE *Scene, size_t Index)
+ENTITY *LiObj(SCENE *Scene, size_t Index)
 {
         if (Index >= Scene->count)
         {
@@ -292,7 +300,7 @@ void LithiumApplyTexture(SCENE *Scene, TEXTURE *Tex, size_t Index)
                 return;
         }
 
-        Mesh3D *Object = Scene->items[Index];
+        ENTITY *Object = Scene->items[Index];
 
         if (!Tex || !Object)
         {

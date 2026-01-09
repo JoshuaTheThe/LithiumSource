@@ -1,14 +1,19 @@
 #include <engine/mesh.h>
 
-void DefaultInteractCallback(Mesh3D *Self)
+void DefaultInteractCallback(ENTITY *Self)
 {
         printf("Hello! From %p\n", Self);
         return;
 }
 
-Mesh3D *InitMesh(SCENE *Scene, size_t triCount)
+void DefaultPhysicsCallback(ENTITY *Self, SCENE *Scene)
 {
-        Mesh3D *mesh = calloc(1, sizeof(Mesh3D));
+        return;
+}
+
+ENTITY *InitMesh(SCENE *Scene, size_t triCount)
+{
+        ENTITY *mesh = calloc(1, sizeof(ENTITY));
         mesh->Tris = calloc(triCount, sizeof(TRI3D));
         mesh->TriCount = triCount;
         mesh->Origin = (VEC3){0.0, 0.0, 0.0};
@@ -17,11 +22,12 @@ Mesh3D *InitMesh(SCENE *Scene, size_t triCount)
         mesh->Scale.Z = 1.0;
 
         mesh->Interact = DefaultInteractCallback;
+        mesh->PhysicsIteration = DefaultPhysicsCallback;
         mesh->InteractSound = Scene->SoundSys.DenySelectSound;
         return mesh;
 }
 
-void DelMesh(Mesh3D *Mesh)
+void DelMesh(ENTITY *Mesh)
 {
         TEXTURES Textures = {0};
         for (size_t i = 0; i < Mesh->TriCount; ++i)
@@ -91,7 +97,7 @@ bool PlayerCollides(SCENE *Scene, TRI3D *Tri, VEC3 Origin)
         return (x_overlap && y_overlap && z_overlap);
 }
 
-bool LoadMeshFromFile(const char *fileName, Mesh3D *mesh)
+bool LoadMeshFromFile(const char *fileName, ENTITY *mesh)
 {
         size_t sz = strnlen(fileName, 512) + strnlen(ProgramPath, 512) + 2;
         char *FullPath = calloc(1, sz);
@@ -178,6 +184,7 @@ bool LoadMeshFromFile(const char *fileName, Mesh3D *mesh)
                         tri->col.r = rand() & 255;
                         tri->col.g = rand() & 255;
                         tri->col.b = rand() & 255;
+                        tri->col.a = 255;
                         tri->Texture = NULL;
 
                         if (sscanf(line, "f %ld/%ld/%ld %ld/%ld/%ld %ld/%ld/%ld",
@@ -290,7 +297,7 @@ bool LoadMeshFromFile(const char *fileName, Mesh3D *mesh)
         return true;
 }
 
-void ScaleMesh(Mesh3D *Mesh, double s)
+void ScaleMesh(ENTITY *Mesh, double s)
 {
         for (size_t x = 0; x < Mesh->TriCount; ++x)
         {

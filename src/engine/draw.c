@@ -32,8 +32,25 @@ void PutPixel(SCENE *Scene, double X, double Y, double Z, COLOUR Col)
         if (Scene->Renderer.ZBuffer[index] < Z)
         {
                 Scene->Renderer.ZBuffer[index] = Z;
-                Scene->Renderer.RGBBuffer[index] = Col;
-                SDL_SetRenderDrawColor(Scene->Renderer.Renderer, Col.r, Col.g, Col.b, 255);
+                float alpha = (float)Col.a / 255.0f;
+                if (alpha != 255.0)
+                {
+                        float inv_alpha = 1.0f - alpha;
+
+                        COLOUR background = Scene->Renderer.RGBBuffer[index];
+                        COLOUR blended;
+                        blended.r = (Uint8)(Col.r * alpha + background.r * inv_alpha);
+                        blended.g = (Uint8)(Col.g * alpha + background.g * inv_alpha);
+                        blended.b = (Uint8)(Col.b * alpha + background.b * inv_alpha);
+                        blended.a = 255;
+
+                        Scene->Renderer.RGBBuffer[index] = blended;
+                }
+                else
+                {
+                        Scene->Renderer.RGBBuffer[index] = Col;
+                }
+                SDL_SetRenderDrawColor(Scene->Renderer.Renderer, Scene->Renderer.RGBBuffer[index].r, Scene->Renderer.RGBBuffer[index].g, Scene->Renderer.RGBBuffer[index].b, 255);
                 SDL_RenderDrawPoint(Scene->Renderer.Renderer, (int)X, (int)Y);
         }
 }

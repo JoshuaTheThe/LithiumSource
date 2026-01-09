@@ -3,6 +3,7 @@
 #include <engine/sound.h>
 #include <engine/camera.h>
 #include <engine/mesh.h>
+#include <engine/ui.h>
 #include <todo.h>
 
 static bool initialised = false;
@@ -139,10 +140,17 @@ void SceneClear(SCENE *Scene)
                 DelMesh(Scene->items[i]);
         }
 
+        for (size_t i = 0; i < Scene->UXObjects.count; ++i)
+        {
+                LithiumCleanupUXObject(&Scene->UXObjects.items[i]);
+        }
+
         free(Scene->items);
         Scene->items = NULL;
         Scene->capacity = 0;
         Scene->count = 0;
+        Scene->UXObjects.capacity = 0;
+        Scene->UXObjects.count = 0;
 }
 
 void SceneEnd(SCENE *Scene, bool Final)

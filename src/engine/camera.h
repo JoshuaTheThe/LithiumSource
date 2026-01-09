@@ -18,7 +18,7 @@
 #define camSpeedIncrease 1
 #define TIME_SCALE 1.0
 
-size_t DrawObject(Mesh3D *Cube, SCENE *Scene);
+size_t DrawObject(ENTITY *Cube, SCENE *Scene);
 void InitProjectionMat(SCENE *Scene);
 size_t DrawScene(SCENE *Scene);
 void MulMatVecW(const VEC3 *i, VEC3 *o, double *wOut, const Mat4x4 *m);

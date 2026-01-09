@@ -24,12 +24,13 @@
 #include <engine/texture.h>
 #include <engine/lithium.h>
 #include <engine/interaction.h>
+#include <engine/ui.h>
 
 SCENE *LithiumInit(int argc, char **argv);
 void LithiumEnd(SCENE *Scene);
 void LithiumUpdate(SCENE *ActiveScene);
 size_t LithiumLoadObject(SCENE *Scene, char *Path);
-Mesh3D *LiObj(SCENE *Scene, size_t Index);
+ENTITY *LiObj(SCENE *Scene, size_t Index);
 void LithiumApplyTexture(SCENE *Scene, TEXTURE *Tex, size_t Index);
 
 #endif

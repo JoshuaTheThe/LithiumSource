@@ -56,11 +56,11 @@ COLOUR SampleTexture(TEXTURE *tex, UV uv)
         uint32_t pixel;
         COLOUR result;
         if (!tex)
-                return (COLOUR){255, 0, 255};
+                return (COLOUR){255, 0, 255, 255};
         if (!tex->pixels)
-                return (COLOUR){255, 255, 0};
+                return (COLOUR){255, 255, 0, 255};
         if (tex->width <= 0 || tex->height <= 0)
-                return (COLOUR){0, 255, 255};
+                return (COLOUR){0, 255, 255, 255};
         if (u < 0.0)
                 u = 0.0;
         if (u > 1.0)
@@ -88,7 +88,7 @@ COLOUR SampleTexture(TEXTURE *tex, UV uv)
 
         if (index >= max_index)
         {
-                return (COLOUR){255, 0, 0};
+                return (COLOUR){255, 0, 0, 255};
         }
 
         pixel = tex->pixels[index];

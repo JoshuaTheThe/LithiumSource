@@ -22,10 +22,10 @@ typedef struct
         size_t count, capacity;
 } TEXTURES;
 
-bool LoadMeshFromFile(const char *fileName, Mesh3D *mesh);
-void DelMesh(Mesh3D *mesh);
-Mesh3D *InitMesh(SCENE *Scene, size_t triCount);
+bool LoadMeshFromFile(const char *fileName, ENTITY *mesh);
+void DelMesh(ENTITY *mesh);
+ENTITY *InitMesh(SCENE *Scene, size_t triCount);
 bool PlayerCollides(SCENE *Scene, TRI3D *Tri, VEC3 Origin);
-void ScaleMesh(Mesh3D *Mesh, double s);
+void ScaleMesh(ENTITY *Mesh, double s);
 
 #endif

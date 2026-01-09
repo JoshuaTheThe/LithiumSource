@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define __VER__ "0.1.1" // LETS FUCKING GO
+#define __VER__ "0.1.3"
 
 #define da_append(xs, x)                                                                           \
         do                                                                                         \
@@ -48,6 +48,9 @@
 
 typedef char KEYMAP[256];
 
+struct SCENE;
+typedef struct SCENE SCENE;
+
 typedef struct
 {
         double X;
@@ -57,7 +60,7 @@ typedef struct
 
 typedef struct
 {
-        uint32_t r, g, b;
+        uint32_t r, g, b, a;
 } COLOUR;
 
 typedef enum
@@ -81,6 +84,12 @@ typedef struct
 
 typedef struct
 {
+        VEC3 p[4];
+        TEXTURE *Tex;
+} UXOBJECT;
+
+typedef struct
+{
         VEC3 p[3];
         COLOUR col;
         UV uv[3];
@@ -94,15 +103,16 @@ typedef struct
         VEC3 Min, Max;
 } BOUNDS;
 
-typedef struct Mesh3DS
+typedef struct ENTITY
 {
         BOUNDS InteractionBounds;
         VEC3 Origin, Scale, Rotation;
         TRI3D *Tris;
         size_t TriCount;
         size_t InteractSound;
-        void (*Interact)(struct Mesh3DS *Self);
-} Mesh3D;
+        void (*Interact)(struct ENTITY *Self);
+        void (*PhysicsIteration)(struct ENTITY *Self, SCENE *Scene);
+} ENTITY;
 
 typedef struct
 {
@@ -162,6 +172,12 @@ typedef struct
         size_t PrimaryJumpSound, PrimaryStepSounds[4], DenySelectSound;
 } SOUND_SYSTEM;
 
+typedef struct
+{
+        UXOBJECT **items;
+        size_t count, capacity;
+} UXOBJECTS;
+
 typedef struct SCENE
 {
         SOUND_SYSTEM SoundSys;
@@ -169,16 +185,12 @@ typedef struct SCENE
         PLAYER Player;
         RENDERER_SDL Renderer;
         WINDOW_SDL Window;
-        Mesh3D **items;
+        UXOBJECTS UXObjects;
+        ENTITY **items;
         size_t count, capacity;
         size_t new, old;
         double dt;
 } SCENE;
-
-typedef struct
-{
-        double m[4][4];
-} MATRIX4x4;
 
 static inline float Clamp(float v, float min, float max)
 {

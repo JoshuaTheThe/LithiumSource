@@ -36,15 +36,12 @@ int main(int Count, char **Arguments)
         LiObj(Scene, obj4)->Origin.X = -1.0;
         
         LithiumApplyTexture(Scene, Texture, obj1);
-        
+
         while (Scene)
         {
                 SceneTick(&Scene);
-                if (Scene)
-                {
-                        LithiumUpdate(Scene);
-                        DrawScene(Scene);
-                }
+                LithiumUpdate(Scene);
+                DrawScene(Scene);
         }
 
         LithiumEnd(Scene);

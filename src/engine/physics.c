@@ -57,7 +57,7 @@ static bool AABBOverlap(BOUNDS a, BOUNDS b)
                 a.Max.Z > b.Min.Z && a.Min.Z < b.Max.Z);
 }
 
-static bool ResolveCollision(SCENE *Scene, Mesh3D *Mesh)
+static bool ResolveCollision(SCENE *Scene, ENTITY *Mesh)
 {
         BOUNDS player = GetPlayerBounds(Scene);
         double overlapX = 0.0, overlapY = 0.0, overlapZ = 0.0;
