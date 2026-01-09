@@ -26,14 +26,12 @@ void NPC_Physics(ENTITY *Self, SCENE *Scene)
                 {
                         if (distance > 0.001)
                         {
-                                direction = NormaliseVec3(&direction);
-
                                 double speed = 2.0;
                                 Self->Velocity.X = direction.X * speed;
                                 Self->Velocity.Z = direction.Z * speed;
 
                                 double angle_to_player = atan2(direction.X, direction.Z) * 180.0 / M_PI;
-                                Self->Rotation.Y = angle_to_player;
+                                Self->Rotation.Y = -angle_to_player;
                         }
                 }
                 else if (distance <= 2.0)
@@ -80,7 +78,7 @@ int main(int Count, char **Arguments)
         Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/walk_3.wav");
 
         size_t obj0 = LithiumLoadObject(Scene, "assets/map.obj");
-        size_t obj1 = LithiumLoadObject(Scene, "assets/guy.obj");
+        size_t obj1 = LithiumLoadObject(Scene, "assets/scientist.obj");
         size_t obj2 = LithiumLoadObject(Scene, "assets/cube.obj"); /* Our Trigger Object */
         LiObj(Scene, obj0)->InteractionBounds.Min.X = 0;
         LiObj(Scene, obj0)->InteractionBounds.Min.Y = 0;
