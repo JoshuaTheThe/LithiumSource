@@ -33,7 +33,7 @@ void PutPixel(SCENE *Scene, double X, double Y, double Z, COLOUR Col)
         {
                 Scene->Renderer.ZBuffer[index] = Z;
                 float alpha = (float)Col.a / 255.0f;
-                if (alpha != 255.0)
+                if (alpha < 1.0)
                 {
                         float inv_alpha = 1.0f - alpha;
 

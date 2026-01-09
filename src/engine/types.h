@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define __VER__ "0.1.3"
+#define __VER__ "0.1.4"
 
 #define da_append(xs, x)                                                                           \
         do                                                                                         \
