@@ -26,6 +26,8 @@ void NPC_Physics(ENTITY *Self, SCENE *Scene)
                 {
                         if (distance > 0.001)
                         {
+                                direction = NormaliseVec3(&direction);
+
                                 double speed = 2.0;
                                 Self->Velocity.X = direction.X * speed;
                                 Self->Velocity.Z = direction.Z * speed;
