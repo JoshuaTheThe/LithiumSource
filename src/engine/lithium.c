@@ -34,11 +34,8 @@ SCENE *LithiumInit(int argc, char **argv)
 
         Mix_AllocateChannels(16);
 
-        SCENE *Scene = SceneInit("Li3D", 0, 0, width * scale, height * scale);
+        SCENE *Scene = SceneInit("Li3D", 0, 0, width, height, scale);
         InitProjectionMat(Scene);
-        SDL_RenderSetLogicalSize(Scene->Renderer.Renderer, width, height);
-        Scene->Renderer.RendererHeight /= scale;
-        Scene->Renderer.RendererWidth /= scale;
         return Scene;
 }
 

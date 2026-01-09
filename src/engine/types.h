@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define __VER__ "0.1.4"
+#define __VER__ "0.1.5"
 
 #define da_append(xs, x)                                                                           \
         do                                                                                         \
@@ -60,7 +60,7 @@ typedef struct
 
 typedef struct
 {
-        uint32_t r, g, b, a;
+        uint8_t r, g, b, a;
 } COLOUR;
 
 typedef enum
@@ -150,6 +150,7 @@ typedef struct
 typedef struct
 {
         SDL_Renderer *Renderer;
+        SDL_Texture *Texture;
         double *ZBuffer;
         COLOUR *RGBBuffer;
         int RendererWidth, RendererHeight;

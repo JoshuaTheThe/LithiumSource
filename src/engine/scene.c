@@ -20,7 +20,7 @@ static void Init(void)
         initialised = true;
 }
 
-SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
+SCENE *SceneInit(const char *Title, int X, int Y, int W, int H, int SCALE)
 {
         SCENE *Scene = calloc(1, sizeof(*Scene));
         if (!Title || W <= 0 || H <= 0 || X < 0 || Y < 0 || !Scene)
@@ -34,14 +34,15 @@ SCENE *SceneInit(const char *Title, int X, int Y, int W, int H)
                 Init();
         }
 
-        Scene->Window.Window = SDL_CreateWindow(Title, X, Y, W, H, SDL_WINDOW_SHOWN);
+        Scene->Window.Window = SDL_CreateWindow(Title, X, Y, W * SCALE, H * SCALE, SDL_WINDOW_SHOWN);
         Scene->Window.WindowHeight = H;
         Scene->Window.WindowWidth = W;
 
         Scene->Renderer.Renderer = SDL_CreateRenderer(Scene->Window.Window, -1, SDL_RENDERER_SOFTWARE);
         Scene->Renderer.RendererWidth = W;
         Scene->Renderer.RendererHeight = H;
-
+        SDL_RenderSetLogicalSize(Scene->Renderer.Renderer, W, H);
+        Scene->Renderer.Texture = SDL_CreateTexture(Scene->Renderer.Renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, W, H);
         Scene->Player.FOV = 70;
         Scene->Player.Aspect = (double)W / (double)H;
         Scene->Player.Position.X = 0.0;
@@ -159,6 +160,7 @@ void SceneEnd(SCENE *Scene, bool Final)
         {
                 if (Scene->capacity)
                         SceneClear(Scene);
+                SDL_DestroyTexture(Scene->Renderer.Texture);
                 SDL_DestroyRenderer(Scene->Renderer.Renderer);
                 SDL_DestroyWindow(Scene->Window.Window);
                 free(Scene->Renderer.ZBuffer);

@@ -478,13 +478,15 @@ size_t DrawScene(SCENE *Scene)
 
         for (size_t i = 0; i < Scene->UXObjects.count; ++i)
         {
-                const UXOBJECT *Object = Scene->UXObjects.items[i];
+                UXOBJECT *Object = Scene->UXObjects.items[i];
                 if (Object)
                 {
                         LithiumDrawUXObject(Scene, Object);
                 }
         }
 
+        SDL_UpdateTexture(Scene->Renderer.Texture, NULL, Scene->Renderer.RGBBuffer, Scene->Renderer.RendererWidth * sizeof(COLOUR));
+        SDL_RenderCopy(Scene->Renderer.Renderer, Scene->Renderer.Texture, NULL, NULL);
         SDL_RenderPresent(Scene->Renderer.Renderer);
         return 0;
 }

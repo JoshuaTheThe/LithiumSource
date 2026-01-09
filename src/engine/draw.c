@@ -50,8 +50,6 @@ void PutPixel(SCENE *Scene, double X, double Y, double Z, COLOUR Col)
                 {
                         Scene->Renderer.RGBBuffer[index] = Col;
                 }
-                SDL_SetRenderDrawColor(Scene->Renderer.Renderer, Scene->Renderer.RGBBuffer[index].r, Scene->Renderer.RGBBuffer[index].g, Scene->Renderer.RGBBuffer[index].b, 255);
-                SDL_RenderDrawPoint(Scene->Renderer.Renderer, (int)X, (int)Y);
         }
 }
 

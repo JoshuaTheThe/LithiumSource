@@ -12,7 +12,7 @@
 #include<engine/draw.h>
 #include<engine/types.h>
 
-SCENE *SceneInit( const char *Title, int X, int Y, int W, int H );
+SCENE *SceneInit( const char *Title, int X, int Y, int W, int H, int SCALE );
 void SceneEnd( SCENE *Scene, bool Final );
 void SceneTick( SCENE **Scene );
 size_t SceneTriCount(SCENE *Scene);
