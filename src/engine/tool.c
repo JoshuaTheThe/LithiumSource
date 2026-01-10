@@ -56,7 +56,7 @@ void LithiumUpdateTools(SCENE *Scene)
                 CastRay(Scene, &Ray2, NULL, 0.1);
                 Ray.InitialDir = NormaliseVec3(&forward);
                 Ray.InitialPos = Ray2.Pos;
-                CastRay(Scene, &Ray, NULL, 0.3);
+                CastRay(Scene, &Ray, NULL, 0.2);
 
                 Scene->Inventory.items[i].Entity->Origin = Ray.Pos;
                 Scene->Inventory.items[i].Entity->Rotation.Y = -Scene->Player.Rotation.Y;
