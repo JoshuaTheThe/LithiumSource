@@ -97,6 +97,7 @@ void LithiumUpdate(SCENE *Scene)
 
         const double yaw = DEG_TO_RAD(Scene->Player.Rotation.Y);
         const double pitch = DEG_TO_RAD(Scene->Player.Rotation.X);
+        LithiumUpdateTools(Scene);
 
         VEC3 forward = {
             sin(yaw),
@@ -189,6 +190,12 @@ void LithiumUpdate(SCENE *Scene)
                 Scene->Player.Flying = false;
         }
 
+        if (Scene->JustPressed['1'])
+        {
+                LithiumFire(Scene);
+                LithiumEndFire(Scene);
+                Scene->JustPressed['1'] = false;
+        }
         if (Scene->JustPressed['e'])
         {
                 RAY3D Ray;
@@ -198,7 +205,7 @@ void LithiumUpdate(SCENE *Scene)
                     cos(pitch) * cos(yaw)};
                 Ray.InitialDir = NormaliseVec3(&direction);
                 Ray.InitialPos = Scene->Player.Position;
-                ENTITY *Hit = CastRay(Scene, Ray);
+                ENTITY *Hit = CastRay(Scene, &Ray, NULL, Scene->Player.MaxInteraction);
                 if (Hit && Hit->Interact)
                 {
                         printf("INFO: Interacted with object at %p\n", Hit);
@@ -209,6 +216,7 @@ void LithiumUpdate(SCENE *Scene)
                 {
                         PlaySound(Scene, Scene->SoundSys.DenySelectSound);
                 }
+
                 Scene->JustPressed['e'] = false;
         }
 

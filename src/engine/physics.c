@@ -59,7 +59,7 @@ static bool AABBOverlap(BOUNDS a, BOUNDS b)
 
 static bool ResolveEntityCollision(SCENE *Scene, ENTITY *A, ENTITY *B)
 {
-        if (!A || !B || !A->IsVisible || !B->IsVisible || (A == B))
+        if (!A || !B || !A->IsVisible || !B->IsVisible || !A->IsCollidable || !B->IsCollidable || (A == B))
                 return false;
 
         BOUNDS boundsA = A->InteractionBounds;
@@ -115,16 +115,20 @@ static bool ResolveEntityCollision(SCENE *Scene, ENTITY *A, ENTITY *B)
                 {
                         if (fabs(overlapX) == minOverlap)
                         {
-                                A->Origin.X += overlapX * 0.5;
-                                B->Origin.X -= overlapX * 0.5;
+                                if (!A->IsStatic)
+                                        A->Origin.X += overlapX * 0.5;
+                                if (!B->IsStatic)
+                                        B->Origin.X -= overlapX * 0.5;
 
                                 if (fabs(A->Velocity.X) > 0.1)
                                         A->Velocity.X = 0;
                         }
                         else if (fabs(overlapY) == minOverlap)
                         {
-                                A->Origin.Y += overlapY * 0.5;
-                                B->Origin.Y -= overlapY * 0.5;
+                                if (!A->IsStatic)
+                                        A->Origin.Y += overlapY * 0.5;
+                                if (!B->IsStatic)
+                                        B->Origin.Y -= overlapY * 0.5;
 
                                 if (overlapY > 0)
                                 {
@@ -139,8 +143,10 @@ static bool ResolveEntityCollision(SCENE *Scene, ENTITY *A, ENTITY *B)
                         }
                         else if (fabs(overlapZ) == minOverlap)
                         {
-                                A->Origin.Z += overlapZ * 0.5;
-                                B->Origin.Z -= overlapZ * 0.5;
+                                if (!A->IsStatic)
+                                        A->Origin.Z += overlapZ * 0.5;
+                                if (!B->IsStatic)
+                                        B->Origin.Z -= overlapZ * 0.5;
 
                                 if (fabs(A->Velocity.Z) > 0.1)
                                         A->Velocity.Z = 0;
@@ -152,6 +158,8 @@ static bool ResolveEntityCollision(SCENE *Scene, ENTITY *A, ENTITY *B)
 }
 static bool ResolveCollision(SCENE *Scene, ENTITY *Mesh)
 {
+        if (!Mesh->IsCollidable)
+                return false;
         BOUNDS player = GetPlayerBounds(Scene);
         double overlapX = 0.0, overlapY = 0.0, overlapZ = 0.0;
         double left = 0.0, right = 0.0, top = 0.0, bottom = 0.0, front = 0.0, back = 0.0;

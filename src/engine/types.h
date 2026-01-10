@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define __VER__ "0.1.7"
+#define __VER__ "0.1.8"
 
 #define da_append(xs, x)                                                                           \
         do                                                                                         \
@@ -114,8 +114,10 @@ typedef struct ENTITY
         size_t TriCount;
         size_t InteractSound;
         void (*Interact)(struct ENTITY *Self, SCENE *Scene);
+        void (*Hurt)(struct ENTITY *Self, SCENE *Scene, struct ENTITY *Cause);
         void (*PhysicsIteration)(struct ENTITY *Self, SCENE *Scene);
         void (*CustomCollisionBehaviour)(struct ENTITY *Self, SCENE *Scene, VEC3 Overlap);
+        double Health;
         int static_data[512];
 } ENTITY;
 
@@ -123,6 +125,15 @@ typedef struct
 {
         double m[4][4];
 } Mat4x4;
+
+typedef struct TOOL
+{
+        ENTITY *Entity;
+        double Range;
+        void (*Hit)(struct TOOL *Self, ENTITY *Entity, SCENE *Scene, double Dist);
+        void (*Fire)(struct TOOL *Self);
+        void (*EndFire)(struct TOOL *Self);
+} TOOL;
 
 typedef struct
 {
@@ -144,6 +155,8 @@ typedef struct
         double Speed, RunSpeed, WalkSpeed, RotSpeed;
         double MaxInteraction;
         double CameraOffsetY;
+
+        size_t CurrentTool;
 } PLAYER;
 
 typedef struct
@@ -184,6 +197,12 @@ typedef struct
         size_t count, capacity;
 } UXOBJECTS;
 
+typedef struct
+{
+        TOOL *items;
+        size_t count, capacity;
+} INVENTORY;
+
 typedef struct SCENE
 {
         SOUND_SYSTEM SoundSys;
@@ -192,6 +211,7 @@ typedef struct SCENE
         RENDERER_SDL Renderer;
         WINDOW_SDL Window;
         UXOBJECTS UXObjects;
+        INVENTORY Inventory;
         ENTITY **items;
         size_t count, capacity;
         size_t new, old;

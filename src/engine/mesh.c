@@ -24,10 +24,12 @@ ENTITY *InitMesh(SCENE *Scene, size_t triCount)
         mesh->Interact = DefaultInteractCallback;
         mesh->PhysicsIteration = DefaultPhysicsCallback;
         mesh->InteractSound = Scene->SoundSys.DenySelectSound;
+        mesh->Hurt = NULL;
         mesh->IsVisible = true;
         mesh->IsInteractable = true;
         mesh->IsStatic = true;
         mesh->IsCollidable = true;
+        mesh->Health = 100.0;
 
         memset(mesh->static_data, 0, sizeof(mesh->static_data));
         return mesh;

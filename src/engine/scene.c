@@ -53,6 +53,7 @@ SCENE *SceneInit(const char *Title, int X, int Y, int W, int H, int SCALE)
         Scene->Player.Rotation.Z = 0.0;
         Scene->Player.Near = 0.1;
         Scene->Player.Far = 1000.0;
+        Scene->Player.CurrentTool = -1;
 
         Scene->SoundSys.DenySelectSound = -1;
         Scene->SoundSys.PrimaryJumpSound = -1;

@@ -9,6 +9,6 @@ typedef struct
         VEC3 InitialPos, InitialDir, Pos;
 } RAY3D;
 
-ENTITY *CastRay(SCENE *Scene, RAY3D Ray);
+ENTITY *CastRay(SCENE *Scene, RAY3D *Ray, double *Dist, double MaxDist);
 
 #endif

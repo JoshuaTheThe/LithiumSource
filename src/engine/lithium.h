@@ -25,6 +25,8 @@
 #include <engine/lithium.h>
 #include <engine/interaction.h>
 #include <engine/ui.h>
+#include <engine/tool.h>
+#include <engine/npc.h>
 
 SCENE *LithiumInit(int argc, char **argv);
 void LithiumEnd(SCENE *Scene);

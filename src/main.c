@@ -11,63 +11,35 @@ void Trigger(ENTITY *Self, SCENE *Scene, VEC3 Overlap)
         Self->static_data[0] = true;
 }
 
-void NPC_Physics(ENTITY *Self, SCENE *Scene)
+void CrowBarHit(TOOL *Self, ENTITY *Hit, SCENE *Scene, double Distance)
 {
-        LiObj(Scene, Self->static_data[0])->Origin = Self->Origin;
-
-        if (Self->static_data[2] == true)
+        if (Self->Entity->static_data[3] == -1)
         {
-                VEC3 player_pos = Scene->Player.Position;
-
-                VEC3 direction = SubVec3(&player_pos, &Self->Origin);
-                double distance = LenVec3(&direction);
-
-                if (distance > 2.0 && distance < 30.0)
-                {
-                        if (distance > 0.001)
-                        {
-                                direction = NormaliseVec3(&direction);
-
-                                double speed = 2.0;
-                                Self->Velocity.X = direction.X * speed;
-                                Self->Velocity.Z = direction.Z * speed;
-
-                                double angle_to_player = atan2(direction.X, direction.Z) * 180.0 / M_PI;
-                                Self->Rotation.Y = -angle_to_player;
-                        }
-                }
-                else if (distance <= 2.0)
-                {
-                        Self->Velocity.X = 0;
-                        Self->Velocity.Z = 0;
-                }
-                else
-                {
-                        Self->Velocity.X = 0;
-                        Self->Velocity.Z = 0;
-                }
-        }
-        else
-        {
-                Self->Velocity.X *= 0.9;
-                Self->Velocity.Z *= 0.9;
+                Self->Entity->static_data[0] = LoadSound(Scene, "assets/cbar_hit1.wav");
+                Self->Entity->static_data[1] = LoadSound(Scene, "assets/cbar_hit2.wav");
+                Self->Entity->static_data[2] = 0;
+                Self->Entity->static_data[3] = 0;
+                *((float *)&Self->Entity->static_data[4]) = 0.0;
         }
 
-        return;
+        size_t soundId = Self->Entity->static_data[Self->Entity->static_data[2]];
+        if (*((float *)&Self->Entity->static_data[4]) <= 0)
+        {
+                Self->Entity->static_data[2] ^= 1;
+                Hit->Health -= 10.0;
+                PlaySound(Scene, soundId);
+                *((float *)&Self->Entity->static_data[4]) = 0.05;
+        }
+
+        if (Hit->Hurt)
+        {
+                Hit->Hurt(Hit, Scene, Self->Entity);
+        }
+        *((float *)&Self->Entity->static_data[4]) -= Scene->dt * 10.0;
 }
 
-void NPC_Interact(ENTITY *Self, SCENE *Scene)
-{
-        Self->static_data[2] = !Self->static_data[2]; /* Follow */
-        if (Self->static_data[1] == -1)
-        {
-                Self->static_data[1] = LoadSound(Scene, "assets/yees.wav");
-        }
-        if (Self->static_data[1] > 0)
-        {
-                PlaySound(Scene, Self->static_data[1]);
-        }
-}
+void CrowBarFire(TOOL *Self) {}
+void CrowBarEnd(TOOL *Self) {}
 
 int main(int Count, char **Arguments)
 {
@@ -80,55 +52,30 @@ int main(int Count, char **Arguments)
         Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/walk_3.wav");
 
         size_t obj0 = LithiumLoadObject(Scene, "assets/map.obj");
-        size_t obj1 = LithiumLoadObject(Scene, "assets/scientist.obj");
+        size_t obj1 = LithiumCreateNPC(Scene, "assets/scientist.obj");
         size_t obj2 = LithiumLoadObject(Scene, "assets/cube.obj"); /* Our Trigger Object */
-        LiObj(Scene, obj0)->InteractionBounds.Min.X = 0;
-        LiObj(Scene, obj0)->InteractionBounds.Min.Y = 0;
-        LiObj(Scene, obj0)->InteractionBounds.Min.Z = 0;
-        LiObj(Scene, obj0)->InteractionBounds.Max.X = 0;
-        LiObj(Scene, obj0)->InteractionBounds.Max.Y = 0;
-        LiObj(Scene, obj0)->InteractionBounds.Max.Z = 0;
+        size_t obj3 = LithiumLoadObject(Scene, "assets/crowbar.obj");
+        LiObj(Scene, obj1)->static_data[NPC_STATIC_TRIGGER] = obj2;
+        LiObj(Scene, obj2)->IsInteractable = false;
+        LiObj(Scene, obj2)->IsVisible = false;
+        LiObj(Scene, obj2)->CustomCollisionBehaviour = Trigger;
+        ScaleMesh(LiObj(Scene, obj2), 2.0);
+
+        LiObj(Scene, obj0)->IsInteractable = false;
         LiObj(Scene, obj1)->Origin.X = 0;
         LiObj(Scene, obj1)->Origin.Y = 5;
         LiObj(Scene, obj1)->Origin.Z = 5;
-        LiObj(Scene, obj2)->Rotation.Z = 90;
-        LiObj(Scene, obj2)->Rotation.Y = -90;
-        LiObj(Scene, obj2)->Origin = LiObj(Scene, obj1)->Origin;
-        LiObj(Scene, obj2)->CustomCollisionBehaviour = Trigger;
-        LiObj(Scene, obj1)->PhysicsIteration = NPC_Physics;
-        LiObj(Scene, obj1)->Interact = NPC_Interact;
-        LiObj(Scene, obj1)->static_data[0] = obj2;
-        LiObj(Scene, obj1)->static_data[1] = -1;
-        LiObj(Scene, obj1)->static_data[2] = false;
-        LiObj(Scene, obj2)->IsVisible = false;
-        LiObj(Scene, obj2)->IsInteractable = false;
-        LiObj(Scene, obj1)->IsStatic = false;
-        ScaleMesh(LiObj(Scene, obj2), 2.0);
+        LiObj(Scene, obj3)->static_data[3] = -1;
 
-        // size_t obj1 = LithiumLoadObject(Scene, "assets/long plane.obj");
-        // size_t obj2 = LithiumLoadObject(Scene, "assets/long plane.obj");
-        // size_t obj3 = LithiumLoadObject(Scene, "assets/long plane.obj");
-        // size_t obj4 = LithiumLoadObject(Scene, "assets/long plane.obj");
         TEXTURE *Texture = LoadTexture("assets/happy.bmp");
-        // LiObj(Scene, obj0)->Origin.Z = 10.0;
-        // LiObj(Scene, obj0)->Origin.Y = 1.0;
-        // LiObj(Scene, obj0)->Rotation.Y = 180.0;
-        // LiObj(Scene, obj1)->Origin.Z = 5.0;
-        // LiObj(Scene, obj2)->Origin.Z = 5.0;
-        // LiObj(Scene, obj3)->Origin.Z = 5.0;
-        // LiObj(Scene, obj4)->Origin.Z = 5.0;
-        // LiObj(Scene, obj1)->Origin.Y = 0.0;
-        // LiObj(Scene, obj2)->Origin.Y = 2.0;
-        // LiObj(Scene, obj3)->Origin.Y = 1.0;
-        // LiObj(Scene, obj4)->Origin.Y = 1.0;
-        // LiObj(Scene, obj3)->Rotation.Z = 90.0;
-        // LiObj(Scene, obj4)->Rotation.Z = 90.0;
-        // LiObj(Scene, obj3)->Origin.X = 1.0;
-        // LiObj(Scene, obj4)->Origin.X = -1.0;
+        TEXTURE *Crowbar = LoadTexture("assets/crowbar.bmp");
         Texture->repeat = true;
         Texture->scalex = 10;
         Texture->scaley = 10;
         LithiumApplyTexture(Scene, Texture, obj2);
+        LithiumApplyTexture(Scene, Crowbar, obj3);
+
+        Scene->Player.CurrentTool = LithiumAddTool(Scene, LiObj(Scene, obj3), CrowBarHit, CrowBarFire, CrowBarEnd, 1.0);
 
         while (Scene->Running)
         {

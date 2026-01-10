@@ -21,10 +21,15 @@ static inline VEC3 RotateVectorInverse(const VEC3 *v, const VEC3 *rotation)
             v->X * m[0][2] + v->Y * m[1][2] + v->Z * m[2][2]};
 }
 
-ENTITY *CastRay(SCENE *Scene, RAY3D Ray)
+ENTITY *CastRay(SCENE *Scene, RAY3D *Ray, double *Dist, double MaxDist)
 {
         ENTITY *closest_mesh = NULL;
         double closest_t = INFINITY;
+
+        Ray->Pos = AddVec3(&Ray->InitialPos, &(VEC3){
+                                                 Ray->InitialDir.X * MaxDist,
+                                                 Ray->InitialDir.Y * MaxDist,
+                                                 Ray->InitialDir.Z * MaxDist});
 
         for (size_t i = 0; i < Scene->count; i++)
         {
@@ -34,16 +39,16 @@ ENTITY *CastRay(SCENE *Scene, RAY3D Ray)
 
                 VEC3 local_pos, local_dir;
 
-                local_pos = SubVec3(&Ray.InitialPos, &mesh->Origin);
+                local_pos = SubVec3(&Ray->InitialPos, &mesh->Origin);
 
                 if (mesh->Rotation.X != 0.0 || mesh->Rotation.Y != 0.0 || mesh->Rotation.Z != 0.0)
                 {
                         local_pos = RotateVectorInverse(&local_pos, &mesh->Rotation);
-                        local_dir = RotateVectorInverse(&Ray.InitialDir, &mesh->Rotation);
+                        local_dir = RotateVectorInverse(&Ray->InitialDir, &mesh->Rotation);
                 }
                 else
                 {
-                        local_dir = Ray.InitialDir;
+                        local_dir = Ray->InitialDir;
                 }
 
                 if (mesh->Scale.X != 1.0 || mesh->Scale.Y != 1.0 || mesh->Scale.Z != 1.0)
@@ -66,7 +71,7 @@ ENTITY *CastRay(SCENE *Scene, RAY3D Ray)
                 }
 
                 double t_min = 0.0;
-                double t_max = Scene->Player.MaxInteraction;
+                double t_max = MaxDist;
 
                 for (int axis = 0; axis < 3; axis++)
                 {
@@ -149,6 +154,8 @@ ENTITY *CastRay(SCENE *Scene, RAY3D Ray)
                         {
                                 closest_t = t;
                                 closest_mesh = mesh;
+                                if (Dist)
+                                        *Dist = closest_t;
                         }
                 }
         }
