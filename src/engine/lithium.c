@@ -163,6 +163,10 @@ void LithiumUpdate(SCENE *Scene)
                 Scene->Player.Rotation.X += Scene->Player.RotSpeed * (double)Scene->dt * n;
         }
 
+        if (Scene->Player.Rotation.X > 89.0)
+                Scene->Player.Rotation.X = 89.0;
+        else if (Scene->Player.Rotation.X < -89.0)
+                Scene->Player.Rotation.X = -89.0;
         if (Scene->Player.Flying)
         {
                 LithiumUpdateFlying(Scene);
