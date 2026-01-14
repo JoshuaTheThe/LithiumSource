@@ -35,4 +35,6 @@ size_t LithiumLoadObject(SCENE *Scene, char *Path);
 ENTITY *LiObj(SCENE *Scene, size_t Index);
 void LithiumApplyTexture(SCENE *Scene, TEXTURE *Tex, size_t Index);
 
+typedef size_t ENT;
+
 #endif

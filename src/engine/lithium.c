@@ -6,9 +6,9 @@ char *ProgramPath = NULL;
 SCENE *LithiumInit(int argc, char **argv)
 {
         srand(time(NULL));
-        const int width = 200;
-        const int height = 200;
-        const int scale = 4;
+        const int width = 400;
+        const int height = 400;
+        const int scale = 2;
 
         if (argc == 2 && !strncmp("--compile", argv[1], 10))
         {
