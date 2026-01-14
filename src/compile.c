@@ -166,11 +166,8 @@ void compile(void)
 
         printf("\n=== Linking ===\n");
 
-#ifdef _WIN32
-        char link_cmd[MAX_PATH * 4] = "gcc -o bin/main.tmp.exe";
-#else
-        char link_cmd[MAX_PATH * 4] = "gcc -o bin/main.tmp";
-#endif
+        char link_cmd[MAX_PATH * 4] = "ld --relocatable -o bin/Lithium.o";
+
         for (size_t i = 0; i < engine_files.count; i++)
         {
                 strcat(link_cmd, " ");
@@ -181,20 +178,13 @@ void compile(void)
                 strcat(link_cmd, " ");
                 strcat(link_cmd, other_files.files[i]);
         }
-        strcat(link_cmd, " -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lm");
 
         if (system(link_cmd) != 0)
         {
                 fprintf(stderr, "Linking failed!\n");
                 exit(1);
         }
-        (void)system("rm bin/main");
-#ifdef _WIN32
-        (void)system("cp bin/main.tmp.exe bin/main.exe");
-#else
-        (void)system("cp bin/main.tmp bin/main");
-#endif
-        printf("Linking successful: bin/main\n");
+        printf("Linking successful: bin/Lithium.o\n");
 
         file_array_free(&all_object_files);
         file_array_free(&engine_files);
