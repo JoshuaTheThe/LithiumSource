@@ -99,6 +99,9 @@ int main(int Count, char **Arguments)
         ENTITY *EMap = LiObj(Scene, Map);
         ENTITY *EWat = LiObj(Scene, Water);
 
+        EMap->IsStatic = true;
+        EWat->IsStatic = true;
+
         const int seed = 12345;
         const double heightMultiplier = 100.0;
 
