@@ -11,3 +11,9 @@ gcc src/compile.c -o bin/main -DFIRST
 
 now that you have the init compiler, run it
 now to recompile, run with the --compile flag
+
+(Cursed, ik, it made sense when i first made it)
+
+anyway,
+
+as of 18/1/2026, it is public source!
