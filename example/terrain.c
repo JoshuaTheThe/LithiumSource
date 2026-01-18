@@ -6,6 +6,8 @@
 #define X_SCALE (32)
 #define Y_SCALE (32)
 
+#define SCALE (0.01)
+
 double noise2D(double x, double y, int seed)
 {
         int n = (int)x * 49632 + (int)y * 325176 + seed;
@@ -65,9 +67,8 @@ double fBm(double x, double y, int octaves, double persistence, int seed)
 
 double genHeight(double x, double z, int seed)
 {
-        double scale = 0.01f;
-        double nx = x * scale;
-        double nz = z * scale;
+        double nx = x * SCALE;
+        double nz = z * SCALE;
 
         double height = fBm(nx, nz, 4, 0.5f, seed);
 
@@ -99,8 +100,11 @@ int main(int Count, char **Arguments)
         ENTITY *EMap = LiObj(Scene, Map);
         ENTITY *EWat = LiObj(Scene, Water);
 
+        ENTITY *Sci = LiObj(Scene, LithiumCreateNPC(Scene, "assets/scientist.obj"));
+
         EMap->IsStatic = true;
         EWat->IsStatic = true;
+        EMap->IsInteractable = true;
 
         const int seed = 12345;
         const double heightMultiplier = 100.0;
@@ -202,6 +206,9 @@ int main(int Count, char **Arguments)
                 Tri->col.g = g;
                 Tri->col.b = b;
         }
+
+        EMap->InteractionBounds.Min = FindMeshMin(EMap);
+        EMap->InteractionBounds.Max = FindMeshMax(EMap);
 
         while (Scene->Running)
         {

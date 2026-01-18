@@ -34,6 +34,8 @@ void LithiumUpdate(SCENE *ActiveScene);
 size_t LithiumLoadObject(SCENE *Scene, char *Path);
 ENTITY *LiObj(SCENE *Scene, size_t Index);
 void LithiumApplyTexture(SCENE *Scene, TEXTURE *Tex, size_t Index);
+VEC3 FindMeshMin(ENTITY *Mesh);
+VEC3 FindMeshMax(ENTITY *Mesh);
 
 typedef size_t ENT;
 

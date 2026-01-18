@@ -218,6 +218,7 @@ void LithiumUpdate(SCENE *Scene)
                 }
                 else
                 {
+                        printf("INFO: Could not interact with object %p %p\n", Hit, Hit ? Hit->Interact : NULL);
                         PlaySound(Scene, Scene->SoundSys.DenySelectSound);
                 }
 
@@ -237,7 +238,7 @@ void LithiumUpdate(SCENE *Scene)
         UpdateSounds(Scene);
 }
 
-static VEC3 FindMeshMin(ENTITY *Mesh)
+VEC3 FindMeshMin(ENTITY *Mesh)
 {
         VEC3 Min = {0};
         Min.X = Mesh->Tris[0].p[0].X * Mesh->Scale.X;
@@ -256,7 +257,7 @@ static VEC3 FindMeshMin(ENTITY *Mesh)
         return Min;
 }
 
-static VEC3 FindMeshMax(ENTITY *Mesh)
+VEC3 FindMeshMax(ENTITY *Mesh)
 {
         VEC3 Max = {0};
         Max.X = Mesh->Tris[0].p[0].X * Mesh->Scale.X;

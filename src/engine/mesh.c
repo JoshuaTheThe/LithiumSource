@@ -53,7 +53,8 @@ void DelMesh(ENTITY *Mesh)
                 FreeTextureData(Textures.items[i]);
         }
 
-        free(Mesh->Tris);
+        if (Mesh->Tris)
+                free(Mesh->Tris);
         free(Mesh);
         printf("INFO: Free'd ENTITY at %p\n", Mesh);
 }
