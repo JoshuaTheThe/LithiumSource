@@ -1,7 +1,7 @@
 cc crowbar_npc.c -o ../obj/crowbar_npc.o -c -I../src
 cc terrain.c -o ../obj/terrain.o -c -I../src
 cc minecraft.c -o ../obj/minecraft.o -c -I../src -O3
-cc nbodysim.c -o ../obj/nbodysim.o -c -I../src -O3 -march=native
+cc nbodysim.c -o ../obj/nbodysim.o -c -I../src -O3 -march=native -mavx2 -mfma -ffast-math -funroll-loops -fno-trapping-math -fno-math-errno
 
 ARGS="../bin/Lithium.o  -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lm"
 cc ../obj/crowbar_npc.o -o ../bin/crowbar_npc $ARGS

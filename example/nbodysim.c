@@ -22,11 +22,11 @@ _Atomic int snap_idx = 0;
 
 typedef struct
 {
-        __attribute__((aligned(32))) double X[N];
-        __attribute__((aligned(32))) double Y[N];
-        __attribute__((aligned(32))) double Z[N];
-        __attribute__((aligned(32))) double VX[N], VY[N], VZ[N];
-        double R[N], M[N];
+        __attribute__((aligned(32))) float X[N];
+        __attribute__((aligned(32))) float Y[N];
+        __attribute__((aligned(32))) float Z[N];
+        __attribute__((aligned(32))) float VX[N], VY[N], VZ[N];
+        __attribute__((aligned(32))) float R[N], M[N];
 } BodiesSoA;
 
 void *SimulationMain(void *running)
@@ -73,53 +73,52 @@ void *SimulationMain(void *running)
                 {
                         double ax_private[N] = {0}, ay_private[N] = {0}, az_private[N] = {0};
 
-#pragma omp for schedule(dynamic)
+#pragma omp for schedule(static)
                         for (size_t i = 0; i < N; ++i)
                         {
-                                __m256d xi = _mm256_set1_pd(Bodies.X[i]);
-                                __m256d yi = _mm256_set1_pd(Bodies.Y[i]);
-                                __m256d zi = _mm256_set1_pd(Bodies.Z[i]);
-                                __m256d mi = _mm256_set1_pd(Bodies.M[i]);
+                                __m256 xi = _mm256_set1_ps(Bodies.X[i]);
+                                __m256 yi = _mm256_set1_ps(Bodies.Y[i]);
+                                __m256 zi = _mm256_set1_ps(Bodies.Z[i]);
+                                __m256 mi = _mm256_set1_ps(Bodies.M[i]);
 
-                                for (size_t j = i + 1; j < N; j += 4)
+                                for (size_t j = i + 1; j < N; j += 8)
                                 {
                                         const size_t rem = N - j;
-                                        const size_t vec_len = rem >= 4 ? 4 : rem;
+                                        const size_t vec_len = rem >= 8 ? 8 : rem;
 
-                                        __m256d xj = _mm256_loadu_pd(&Bodies.X[j]);
-                                        __m256d yj = _mm256_loadu_pd(&Bodies.Y[j]);
-                                        __m256d zj = _mm256_loadu_pd(&Bodies.Z[j]);
-                                        __m256d mj = _mm256_loadu_pd(&Bodies.M[j]);
+                                        __m256 xj = _mm256_loadu_ps(&Bodies.X[j]);
+                                        __m256 yj = _mm256_loadu_ps(&Bodies.Y[j]);
+                                        __m256 zj = _mm256_loadu_ps(&Bodies.Z[j]);
+                                        __m256 mj = _mm256_loadu_ps(&Bodies.M[j]);
 
-                                        __m256d dx = _mm256_sub_pd(xj, xi);
-                                        __m256d dy = _mm256_sub_pd(yj, yi);
-                                        __m256d dz = _mm256_sub_pd(zj, zi);
+                                        __m256 dx = _mm256_sub_ps(xj, xi);
+                                        __m256 dy = _mm256_sub_ps(yj, yi);
+                                        __m256 dz = _mm256_sub_ps(zj, zi);
 
                                         const double eps = 1e-3;
-                                        __m256d eps2 = _mm256_set1_pd(eps * eps);
+                                        __m256 eps2 = _mm256_set1_ps(eps * eps);
 
-                                        __m256d d2 = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(dx, dx),
-                                                                                 _mm256_mul_pd(dy, dy)),
-                                                                   _mm256_add_pd(_mm256_mul_pd(dz, dz), eps2));
+                                        __m256 d2 = _mm256_add_ps(_mm256_add_ps(_mm256_mul_ps(dx, dx),
+                                                                                _mm256_mul_ps(dy, dy)),
+                                                                  _mm256_add_ps(_mm256_mul_ps(dz, dz), eps2));
 
-                                        __m256d invDist = _mm256_cvtps_pd(
-                                            _mm_rsqrt_ps(_mm256_cvtpd_ps(d2)));
-                                        invDist = _mm256_mul_pd(invDist,
-                                                                _mm256_sub_pd(_mm256_set1_pd(1.5),
-                                                                              _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(0.5), d2),
-                                                                                            _mm256_mul_pd(invDist, invDist))));
+                                        __m256 invDist = _mm256_rsqrt_ps(d2);
+                                        invDist = _mm256_mul_ps(invDist,
+                                                                _mm256_sub_ps(_mm256_set1_ps(1.5),
+                                                                              _mm256_mul_ps(_mm256_mul_ps(_mm256_set1_ps(0.5), d2),
+                                                                                            _mm256_mul_ps(invDist, invDist))));
 
-                                        __m256d F = _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(G), mi),
-                                                                  _mm256_mul_pd(mj, _mm256_mul_pd(invDist, invDist)));
+                                        __m256 F = _mm256_mul_ps(_mm256_mul_ps(_mm256_set1_ps(G), mi),
+                                                                 _mm256_mul_ps(mj, _mm256_mul_ps(invDist, invDist)));
 
-                                        __m256d fx = _mm256_mul_pd(F, _mm256_mul_pd(dx, invDist));
-                                        __m256d fy = _mm256_mul_pd(F, _mm256_mul_pd(dy, invDist));
-                                        __m256d fz = _mm256_mul_pd(F, _mm256_mul_pd(dz, invDist));
+                                        __m256 fx = _mm256_mul_ps(F, _mm256_mul_ps(dx, invDist));
+                                        __m256 fy = _mm256_mul_ps(F, _mm256_mul_ps(dy, invDist));
+                                        __m256 fz = _mm256_mul_ps(F, _mm256_mul_ps(dz, invDist));
 
-                                        double fx_arr[4], fy_arr[4], fz_arr[4];
-                                        _mm256_storeu_pd(fx_arr, fx);
-                                        _mm256_storeu_pd(fy_arr, fy);
-                                        _mm256_storeu_pd(fz_arr, fz);
+                                        float fx_arr[8], fy_arr[8], fz_arr[8];
+                                        _mm256_storeu_ps(fx_arr, fx);
+                                        _mm256_storeu_ps(fy_arr, fy);
+                                        _mm256_storeu_ps(fz_arr, fz);
 
                                         for (size_t k = 0; k < vec_len; ++k)
                                         {
@@ -155,52 +154,51 @@ void *SimulationMain(void *running)
                 {
                         double ax_private[N] = {0}, ay_private[N] = {0}, az_private[N] = {0};
 
-#pragma omp for schedule(dynamic)
+#pragma omp for schedule(static)
                         for (size_t i = 0; i < N; ++i)
                         {
-                                __m256d xi = _mm256_set1_pd(Bodies.X[i]);
-                                __m256d yi = _mm256_set1_pd(Bodies.Y[i]);
-                                __m256d zi = _mm256_set1_pd(Bodies.Z[i]);
-                                __m256d mi = _mm256_set1_pd(Bodies.M[i]);
+                                __m256 xi = _mm256_set1_ps(Bodies.X[i]);
+                                __m256 yi = _mm256_set1_ps(Bodies.Y[i]);
+                                __m256 zi = _mm256_set1_ps(Bodies.Z[i]);
+                                __m256 mi = _mm256_set1_ps(Bodies.M[i]);
 
-                                for (size_t j = i + 1; j < N; j += 4)
+                                for (size_t j = i + 1; j < N; j += 8)
                                 {
                                         size_t rem = N - j;
-                                        size_t vec_len = rem >= 4 ? 4 : rem;
+                                        size_t vec_len = rem >= 8 ? 8 : rem;
 
-                                        __m256d xj = _mm256_loadu_pd(&Bodies.X[j]);
-                                        __m256d yj = _mm256_loadu_pd(&Bodies.Y[j]);
-                                        __m256d zj = _mm256_loadu_pd(&Bodies.Z[j]);
-                                        __m256d mj = _mm256_loadu_pd(&Bodies.M[j]);
+                                        __m256 xj = _mm256_loadu_ps(&Bodies.X[j]);
+                                        __m256 yj = _mm256_loadu_ps(&Bodies.Y[j]);
+                                        __m256 zj = _mm256_loadu_ps(&Bodies.Z[j]);
+                                        __m256 mj = _mm256_loadu_ps(&Bodies.M[j]);
 
-                                        __m256d dx = _mm256_sub_pd(xj, xi);
-                                        __m256d dy = _mm256_sub_pd(yj, yi);
-                                        __m256d dz = _mm256_sub_pd(zj, zi);
+                                        __m256 dx = _mm256_sub_ps(xj, xi);
+                                        __m256 dy = _mm256_sub_ps(yj, yi);
+                                        __m256 dz = _mm256_sub_ps(zj, zi);
 
                                         const double eps = 1e-3;
-                                        __m256d eps2 = _mm256_set1_pd(eps * eps);
+                                        __m256 eps2 = _mm256_set1_ps(eps * eps);
 
-                                        __m256d d2 = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(dx, dx),
-                                                                                 _mm256_mul_pd(dy, dy)),
-                                                                   _mm256_add_pd(_mm256_mul_pd(dz, dz), eps2));
+                                        __m256 d2 = _mm256_add_ps(_mm256_add_ps(_mm256_mul_ps(dx, dx),
+                                                                                _mm256_mul_ps(dy, dy)),
+                                                                  _mm256_add_ps(_mm256_mul_ps(dz, dz), eps2));
 
-                                        __m256d invDist = _mm256_cvtps_pd(
-                                            _mm_rsqrt_ps(_mm256_cvtpd_ps(d2)));
-                                        invDist = _mm256_mul_pd(invDist,
-                                                                _mm256_sub_pd(_mm256_set1_pd(1.5),
-                                                                              _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(0.5), d2),
-                                                                                            _mm256_mul_pd(invDist, invDist))));
-                                        __m256d F = _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(G), mi),
-                                                                  _mm256_mul_pd(mj, _mm256_mul_pd(invDist, invDist)));
+                                        __m256 invDist = _mm256_rsqrt_ps(d2);
+                                        invDist = _mm256_mul_ps(invDist,
+                                                                _mm256_sub_ps(_mm256_set1_ps(1.5),
+                                                                              _mm256_mul_ps(_mm256_mul_ps(_mm256_set1_ps(0.5), d2),
+                                                                                            _mm256_mul_ps(invDist, invDist))));
+                                        __m256 F = _mm256_mul_ps(_mm256_mul_ps(_mm256_set1_ps(G), mi),
+                                                                 _mm256_mul_ps(mj, _mm256_mul_ps(invDist, invDist)));
 
-                                        __m256d fx = _mm256_mul_pd(F, _mm256_mul_pd(dx, invDist));
-                                        __m256d fy = _mm256_mul_pd(F, _mm256_mul_pd(dy, invDist));
-                                        __m256d fz = _mm256_mul_pd(F, _mm256_mul_pd(dz, invDist));
+                                        __m256 fx = _mm256_mul_ps(F, _mm256_mul_ps(dx, invDist));
+                                        __m256 fy = _mm256_mul_ps(F, _mm256_mul_ps(dy, invDist));
+                                        __m256 fz = _mm256_mul_ps(F, _mm256_mul_ps(dz, invDist));
 
-                                        double fx_arr[4], fy_arr[4], fz_arr[4];
-                                        _mm256_storeu_pd(fx_arr, fx);
-                                        _mm256_storeu_pd(fy_arr, fy);
-                                        _mm256_storeu_pd(fz_arr, fz);
+                                        float fx_arr[8], fy_arr[8], fz_arr[8];
+                                        _mm256_storeu_ps(fx_arr, fx);
+                                        _mm256_storeu_ps(fy_arr, fy);
+                                        _mm256_storeu_ps(fz_arr, fz);
 
                                         for (size_t k = 0; k < vec_len; ++k)
                                         {
@@ -239,51 +237,51 @@ void *SimulationMain(void *running)
 #pragma omp parallel for schedule(dynamic)
                 for (size_t i = 0; i < N; ++i)
                 {
-                        __m256d xi = _mm256_set1_pd(Bodies.X[i]);
-                        __m256d yi = _mm256_set1_pd(Bodies.Y[i]);
-                        __m256d zi = _mm256_set1_pd(Bodies.Z[i]);
-                        __m256d vxi = _mm256_set1_pd(Bodies.VX[i]);
-                        __m256d vyi = _mm256_set1_pd(Bodies.VY[i]);
-                        __m256d vzi = _mm256_set1_pd(Bodies.VZ[i]);
-                        __m256d mi = _mm256_set1_pd(Bodies.M[i]);
-                        __m256d ri = _mm256_set1_pd(Bodies.R[i]);
+                        __m256 xi = _mm256_set1_ps(Bodies.X[i]);
+                        __m256 yi = _mm256_set1_ps(Bodies.Y[i]);
+                        __m256 zi = _mm256_set1_ps(Bodies.Z[i]);
+                        __m256 vxi = _mm256_set1_ps(Bodies.VX[i]);
+                        __m256 vyi = _mm256_set1_ps(Bodies.VY[i]);
+                        __m256 vzi = _mm256_set1_ps(Bodies.VZ[i]);
+                        __m256 mi = _mm256_set1_ps(Bodies.M[i]);
+                        __m256 ri = _mm256_set1_ps(Bodies.R[i]);
 
-                        for (size_t j = i + 1; j < N; j += 4)
+                        for (size_t j = i + 1; j < N; j += 8)
                         {
                                 size_t rem = N - j;
-                                size_t vec_len = rem >= 4 ? 4 : rem;
+                                size_t vec_len = rem >= 8 ? 8 : rem;
 
-                                __m256d xj = _mm256_loadu_pd(&Bodies.X[j]);
-                                __m256d yj = _mm256_loadu_pd(&Bodies.Y[j]);
-                                __m256d zj = _mm256_loadu_pd(&Bodies.Z[j]);
-                                __m256d vxj = _mm256_loadu_pd(&Bodies.VX[j]);
-                                __m256d vyj = _mm256_loadu_pd(&Bodies.VY[j]);
-                                __m256d vzj = _mm256_loadu_pd(&Bodies.VZ[j]);
-                                __m256d mj = _mm256_loadu_pd(&Bodies.M[j]);
-                                __m256d rj = _mm256_loadu_pd(&Bodies.R[j]);
+                                __m256 xj = _mm256_loadu_ps(&Bodies.X[j]);
+                                __m256 yj = _mm256_loadu_ps(&Bodies.Y[j]);
+                                __m256 zj = _mm256_loadu_ps(&Bodies.Z[j]);
+                                __m256 vxj = _mm256_loadu_ps(&Bodies.VX[j]);
+                                __m256 vyj = _mm256_loadu_ps(&Bodies.VY[j]);
+                                __m256 vzj = _mm256_loadu_ps(&Bodies.VZ[j]);
+                                __m256 mj = _mm256_loadu_ps(&Bodies.M[j]);
+                                __m256 rj = _mm256_loadu_ps(&Bodies.R[j]);
 
-                                __m256d dx = _mm256_sub_pd(xj, xi);
-                                __m256d dy = _mm256_sub_pd(yj, yi);
-                                __m256d dz = _mm256_sub_pd(zj, zi);
+                                __m256 dx = _mm256_sub_ps(xj, xi);
+                                __m256 dy = _mm256_sub_ps(yj, yi);
+                                __m256 dz = _mm256_sub_ps(zj, zi);
 
-                                __m256d dist2 = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(dx, dx),
-                                                                            _mm256_mul_pd(dy, dy)),
-                                                              _mm256_mul_pd(dz, dz));
+                                __m256 dist2 = _mm256_add_ps(_mm256_add_ps(_mm256_mul_ps(dx, dx),
+                                                                           _mm256_mul_ps(dy, dy)),
+                                                             _mm256_mul_ps(dz, dz));
 
-                                __m256d minDist = _mm256_add_pd(ri, rj);
-                                __m256d minDist2 = _mm256_mul_pd(minDist, minDist);
+                                __m256 minDist = _mm256_add_ps(ri, rj);
+                                __m256 minDist2 = _mm256_mul_ps(minDist, minDist);
 
-                                __m256d mask = _mm256_cmp_pd(dist2, minDist2, _CMP_LT_OS);
+                                __m256 mask = _mm256_cmp_ps(dist2, minDist2, _CMP_LT_OS);
 
-                                if (_mm256_movemask_pd(mask) != 0)
+                                if (_mm256_movemask_ps(mask) != 0)
                                 {
-                                        double dx_arr[4], dy_arr[4], dz_arr[4];
-                                        double dist2_arr[4], minDist_arr[4];
-                                        _mm256_storeu_pd(dx_arr, dx);
-                                        _mm256_storeu_pd(dy_arr, dy);
-                                        _mm256_storeu_pd(dz_arr, dz);
-                                        _mm256_storeu_pd(dist2_arr, dist2);
-                                        _mm256_storeu_pd(minDist_arr, minDist);
+                                        float dx_arr[8], dy_arr[8], dz_arr[8];
+                                        float dist2_arr[8], minDist_arr[8];
+                                        _mm256_storeu_ps(dx_arr, dx);
+                                        _mm256_storeu_ps(dy_arr, dy);
+                                        _mm256_storeu_ps(dz_arr, dz);
+                                        _mm256_storeu_ps(dist2_arr, dist2);
+                                        _mm256_storeu_ps(minDist_arr, minDist);
 
                                         for (size_t k = 0; k < vec_len; ++k)
                                         {
