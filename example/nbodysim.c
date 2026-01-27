@@ -32,14 +32,14 @@ typedef struct
 void *SimulationMain(void *running)
 {
         bool *pRunning = running;
-        BodiesSoA Bodies;
+        BodiesSoA *Bodies = aligned_alloc(32, sizeof(BodiesSoA));
 
         const double CENTRAL_MASS = 1e10;
 
-        Bodies.X[0] = Bodies.Y[0] = Bodies.Z[0] = 0;
-        Bodies.VX[0] = Bodies.VY[0] = Bodies.VZ[0] = 0;
-        Bodies.R[0] = 1000;
-        Bodies.M[0] = CENTRAL_MASS;
+        Bodies->X[0] = Bodies->Y[0] = Bodies->Z[0] = 0;
+        Bodies->VX[0] = Bodies->VY[0] = Bodies->VZ[0] = 0;
+        Bodies->R[0] = 1000;
+        Bodies->M[0] = CENTRAL_MASS;
 
         for (size_t i = 1; i < N; ++i)
         {
@@ -47,22 +47,22 @@ void *SimulationMain(void *running)
                 double theta = ((double)rand() / RAND_MAX) * 2.0 * M_PI;
                 double y_offset = (((double)rand() / RAND_MAX) - 0.5) * 5000;
 
-                Bodies.X[i] = r * cos(theta);
-                Bodies.Y[i] = y_offset;
-                Bodies.Z[i] = r * sin(theta);
+                Bodies->X[i] = r * cos(theta);
+                Bodies->Y[i] = y_offset;
+                Bodies->Z[i] = r * sin(theta);
 
                 double speed = sqrt(G * CENTRAL_MASS / r);
 
-                Bodies.VX[i] = -speed * sin(theta);
-                Bodies.VY[i] = ((double)rand() / RAND_MAX - 0.5) * 50.0;
-                Bodies.VZ[i] = speed * cos(theta);
+                Bodies->VX[i] = -speed * sin(theta);
+                Bodies->VY[i] = ((double)rand() / RAND_MAX - 0.5) * 50.0;
+                Bodies->VZ[i] = speed * cos(theta);
 
-                Bodies.R[i] = 0.9;
-                Bodies.M[i] = 100.0;
+                Bodies->R[i] = 0.9;
+                Bodies->M[i] = 100.0;
         }
 
-        double ax[N] = {0}, ay[N] = {0}, az[N] = {0};
-        double ax_new[N], ay_new[N], az_new[N];
+        __attribute__((aligned(32))) double ax[N] = {0}, ay[N] = {0}, az[N] = {0};
+        __attribute__((aligned(32))) double ax_new[N], ay_new[N], az_new[N];
 
         bool Running = atomic_load(pRunning);
         size_t timer = 1;
@@ -71,25 +71,25 @@ void *SimulationMain(void *running)
         {
 #pragma omp parallel
                 {
-                        double ax_private[N] = {0}, ay_private[N] = {0}, az_private[N] = {0};
+                        __attribute__((aligned(32))) double ax_private[N] = {0}, ay_private[N] = {0}, az_private[N] = {0};
 
 #pragma omp for schedule(static)
                         for (size_t i = 0; i < N; ++i)
                         {
-                                __m256 xi = _mm256_set1_ps(Bodies.X[i]);
-                                __m256 yi = _mm256_set1_ps(Bodies.Y[i]);
-                                __m256 zi = _mm256_set1_ps(Bodies.Z[i]);
-                                __m256 mi = _mm256_set1_ps(Bodies.M[i]);
+                                __m256 xi = _mm256_set1_ps(Bodies->X[i]);
+                                __m256 yi = _mm256_set1_ps(Bodies->Y[i]);
+                                __m256 zi = _mm256_set1_ps(Bodies->Z[i]);
+                                __m256 mi = _mm256_set1_ps(Bodies->M[i]);
 
                                 for (size_t j = i + 1; j < N; j += 8)
                                 {
                                         const size_t rem = N - j;
                                         const size_t vec_len = rem >= 8 ? 8 : rem;
 
-                                        __m256 xj = _mm256_loadu_ps(&Bodies.X[j]);
-                                        __m256 yj = _mm256_loadu_ps(&Bodies.Y[j]);
-                                        __m256 zj = _mm256_loadu_ps(&Bodies.Z[j]);
-                                        __m256 mj = _mm256_loadu_ps(&Bodies.M[j]);
+                                        __m256 xj = _mm256_loadu_ps(&Bodies->X[j]);
+                                        __m256 yj = _mm256_loadu_ps(&Bodies->Y[j]);
+                                        __m256 zj = _mm256_loadu_ps(&Bodies->Z[j]);
+                                        __m256 mj = _mm256_loadu_ps(&Bodies->M[j]);
 
                                         __m256 dx = _mm256_sub_ps(xj, xi);
                                         __m256 dy = _mm256_sub_ps(yj, yi);
@@ -115,20 +115,20 @@ void *SimulationMain(void *running)
                                         __m256 fy = _mm256_mul_ps(F, _mm256_mul_ps(dy, invDist));
                                         __m256 fz = _mm256_mul_ps(F, _mm256_mul_ps(dz, invDist));
 
-                                        float fx_arr[8], fy_arr[8], fz_arr[8];
-                                        _mm256_storeu_ps(fx_arr, fx);
-                                        _mm256_storeu_ps(fy_arr, fy);
-                                        _mm256_storeu_ps(fz_arr, fz);
+                                        __attribute__((aligned(32))) float fx_arr[8], fy_arr[8], fz_arr[8];
+                                        _mm256_store_ps(fx_arr, fx);
+                                        _mm256_store_ps(fy_arr, fy);
+                                        _mm256_store_ps(fz_arr, fz);
 
                                         for (size_t k = 0; k < vec_len; ++k)
                                         {
-                                                ax_private[i] += fx_arr[k] / Bodies.M[i];
-                                                ay_private[i] += fy_arr[k] / Bodies.M[i];
-                                                az_private[i] += fz_arr[k] / Bodies.M[i];
+                                                ax_private[i] += fx_arr[k] / Bodies->M[i];
+                                                ay_private[i] += fy_arr[k] / Bodies->M[i];
+                                                az_private[i] += fz_arr[k] / Bodies->M[i];
 
-                                                ax_private[j + k] -= fx_arr[k] / Bodies.M[j + k];
-                                                ay_private[j + k] -= fy_arr[k] / Bodies.M[j + k];
-                                                az_private[j + k] -= fz_arr[k] / Bodies.M[j + k];
+                                                ax_private[j + k] -= fx_arr[k] / Bodies->M[j + k];
+                                                ay_private[j + k] -= fy_arr[k] / Bodies->M[j + k];
+                                                az_private[j + k] -= fz_arr[k] / Bodies->M[j + k];
                                         }
                                 }
                         }
@@ -145,32 +145,32 @@ void *SimulationMain(void *running)
 #pragma omp parallel for
                 for (size_t i = 0; i < N; ++i)
                 {
-                        Bodies.X[i] += Bodies.VX[i] * SIM_DT + 0.5 * ax[i] * SIM_DT * SIM_DT;
-                        Bodies.Y[i] += Bodies.VY[i] * SIM_DT + 0.5 * ay[i] * SIM_DT * SIM_DT;
-                        Bodies.Z[i] += Bodies.VZ[i] * SIM_DT + 0.5 * az[i] * SIM_DT * SIM_DT;
+                        Bodies->X[i] += Bodies->VX[i] * SIM_DT + 0.5 * ax[i] * SIM_DT * SIM_DT;
+                        Bodies->Y[i] += Bodies->VY[i] * SIM_DT + 0.5 * ay[i] * SIM_DT * SIM_DT;
+                        Bodies->Z[i] += Bodies->VZ[i] * SIM_DT + 0.5 * az[i] * SIM_DT * SIM_DT;
                 }
 
 #pragma omp parallel
                 {
-                        double ax_private[N] = {0}, ay_private[N] = {0}, az_private[N] = {0};
+                        __attribute__((aligned(32))) double ax_private[N] = {0}, ay_private[N] = {0}, az_private[N] = {0};
 
 #pragma omp for schedule(static)
                         for (size_t i = 0; i < N; ++i)
                         {
-                                __m256 xi = _mm256_set1_ps(Bodies.X[i]);
-                                __m256 yi = _mm256_set1_ps(Bodies.Y[i]);
-                                __m256 zi = _mm256_set1_ps(Bodies.Z[i]);
-                                __m256 mi = _mm256_set1_ps(Bodies.M[i]);
+                                __m256 xi = _mm256_set1_ps(Bodies->X[i]);
+                                __m256 yi = _mm256_set1_ps(Bodies->Y[i]);
+                                __m256 zi = _mm256_set1_ps(Bodies->Z[i]);
+                                __m256 mi = _mm256_set1_ps(Bodies->M[i]);
 
                                 for (size_t j = i + 1; j < N; j += 8)
                                 {
-                                        size_t rem = N - j;
-                                        size_t vec_len = rem >= 8 ? 8 : rem;
+                                        const size_t rem = N - j;
+                                        const size_t vec_len = rem >= 8 ? 8 : rem;
 
-                                        __m256 xj = _mm256_loadu_ps(&Bodies.X[j]);
-                                        __m256 yj = _mm256_loadu_ps(&Bodies.Y[j]);
-                                        __m256 zj = _mm256_loadu_ps(&Bodies.Z[j]);
-                                        __m256 mj = _mm256_loadu_ps(&Bodies.M[j]);
+                                        __m256 xj = _mm256_loadu_ps(&Bodies->X[j]);
+                                        __m256 yj = _mm256_loadu_ps(&Bodies->Y[j]);
+                                        __m256 zj = _mm256_loadu_ps(&Bodies->Z[j]);
+                                        __m256 mj = _mm256_loadu_ps(&Bodies->M[j]);
 
                                         __m256 dx = _mm256_sub_ps(xj, xi);
                                         __m256 dy = _mm256_sub_ps(yj, yi);
@@ -195,20 +195,21 @@ void *SimulationMain(void *running)
                                         __m256 fy = _mm256_mul_ps(F, _mm256_mul_ps(dy, invDist));
                                         __m256 fz = _mm256_mul_ps(F, _mm256_mul_ps(dz, invDist));
 
-                                        float fx_arr[8], fy_arr[8], fz_arr[8];
-                                        _mm256_storeu_ps(fx_arr, fx);
-                                        _mm256_storeu_ps(fy_arr, fy);
-                                        _mm256_storeu_ps(fz_arr, fz);
+                                        __attribute__((aligned(32))) float fx_arr[8], fy_arr[8], fz_arr[8];
+                                        _mm256_store_ps(fx_arr, fx);
+                                        _mm256_store_ps(fy_arr, fy);
+                                        _mm256_store_ps(fz_arr, fz);
 
                                         for (size_t k = 0; k < vec_len; ++k)
                                         {
-                                                ax_private[i] += fx_arr[k] / Bodies.M[i];
-                                                ay_private[i] += fy_arr[k] / Bodies.M[i];
-                                                az_private[i] += fz_arr[k] / Bodies.M[i];
 
-                                                ax_private[j + k] -= fx_arr[k] / Bodies.M[j + k];
-                                                ay_private[j + k] -= fy_arr[k] / Bodies.M[j + k];
-                                                az_private[j + k] -= fz_arr[k] / Bodies.M[j + k];
+                                                ax_private[i] += fx_arr[k] / Bodies->M[i];
+                                                ay_private[i] += fy_arr[k] / Bodies->M[i];
+                                                az_private[i] += fz_arr[k] / Bodies->M[i];
+
+                                                ax_private[j + k] -= fx_arr[k] / Bodies->M[j + k];
+                                                ay_private[j + k] -= fy_arr[k] / Bodies->M[j + k];
+                                                az_private[j + k] -= fz_arr[k] / Bodies->M[j + k];
                                         }
                                 }
                         }
@@ -225,9 +226,9 @@ void *SimulationMain(void *running)
 #pragma omp parallel for
                 for (size_t i = 0; i < N; ++i)
                 {
-                        Bodies.VX[i] += 0.5 * (ax[i] + ax_new[i]) * SIM_DT;
-                        Bodies.VY[i] += 0.5 * (ay[i] + ay_new[i]) * SIM_DT;
-                        Bodies.VZ[i] += 0.5 * (az[i] + az_new[i]) * SIM_DT;
+                        Bodies->VX[i] += 0.5 * (ax[i] + ax_new[i]) * SIM_DT;
+                        Bodies->VY[i] += 0.5 * (ay[i] + ay_new[i]) * SIM_DT;
+                        Bodies->VZ[i] += 0.5 * (az[i] + az_new[i]) * SIM_DT;
 
                         ax[i] = ax_new[i];
                         ay[i] = ay_new[i];
@@ -237,28 +238,28 @@ void *SimulationMain(void *running)
 #pragma omp parallel for schedule(dynamic)
                 for (size_t i = 0; i < N; ++i)
                 {
-                        __m256 xi = _mm256_set1_ps(Bodies.X[i]);
-                        __m256 yi = _mm256_set1_ps(Bodies.Y[i]);
-                        __m256 zi = _mm256_set1_ps(Bodies.Z[i]);
-                        __m256 vxi = _mm256_set1_ps(Bodies.VX[i]);
-                        __m256 vyi = _mm256_set1_ps(Bodies.VY[i]);
-                        __m256 vzi = _mm256_set1_ps(Bodies.VZ[i]);
-                        __m256 mi = _mm256_set1_ps(Bodies.M[i]);
-                        __m256 ri = _mm256_set1_ps(Bodies.R[i]);
+                        __m256 xi = _mm256_set1_ps(Bodies->X[i]);
+                        __m256 yi = _mm256_set1_ps(Bodies->Y[i]);
+                        __m256 zi = _mm256_set1_ps(Bodies->Z[i]);
+                        __m256 vxi = _mm256_set1_ps(Bodies->VX[i]);
+                        __m256 vyi = _mm256_set1_ps(Bodies->VY[i]);
+                        __m256 vzi = _mm256_set1_ps(Bodies->VZ[i]);
+                        __m256 mi = _mm256_set1_ps(Bodies->M[i]);
+                        __m256 ri = _mm256_set1_ps(Bodies->R[i]);
 
                         for (size_t j = i + 1; j < N; j += 8)
                         {
                                 size_t rem = N - j;
                                 size_t vec_len = rem >= 8 ? 8 : rem;
 
-                                __m256 xj = _mm256_loadu_ps(&Bodies.X[j]);
-                                __m256 yj = _mm256_loadu_ps(&Bodies.Y[j]);
-                                __m256 zj = _mm256_loadu_ps(&Bodies.Z[j]);
-                                __m256 vxj = _mm256_loadu_ps(&Bodies.VX[j]);
-                                __m256 vyj = _mm256_loadu_ps(&Bodies.VY[j]);
-                                __m256 vzj = _mm256_loadu_ps(&Bodies.VZ[j]);
-                                __m256 mj = _mm256_loadu_ps(&Bodies.M[j]);
-                                __m256 rj = _mm256_loadu_ps(&Bodies.R[j]);
+                                __m256 xj = _mm256_loadu_ps(&Bodies->X[j]);
+                                __m256 yj = _mm256_loadu_ps(&Bodies->Y[j]);
+                                __m256 zj = _mm256_loadu_ps(&Bodies->Z[j]);
+                                __m256 vxj = _mm256_loadu_ps(&Bodies->VX[j]);
+                                __m256 vyj = _mm256_loadu_ps(&Bodies->VY[j]);
+                                __m256 vzj = _mm256_loadu_ps(&Bodies->VZ[j]);
+                                __m256 mj = _mm256_loadu_ps(&Bodies->M[j]);
+                                __m256 rj = _mm256_loadu_ps(&Bodies->R[j]);
 
                                 __m256 dx = _mm256_sub_ps(xj, xi);
                                 __m256 dy = _mm256_sub_ps(yj, yi);
@@ -277,11 +278,11 @@ void *SimulationMain(void *running)
                                 {
                                         float dx_arr[8], dy_arr[8], dz_arr[8];
                                         float dist2_arr[8], minDist_arr[8];
-                                        _mm256_storeu_ps(dx_arr, dx);
-                                        _mm256_storeu_ps(dy_arr, dy);
-                                        _mm256_storeu_ps(dz_arr, dz);
-                                        _mm256_storeu_ps(dist2_arr, dist2);
-                                        _mm256_storeu_ps(minDist_arr, minDist);
+                                        _mm256_store_ps(dx_arr, dx);
+                                        _mm256_store_ps(dy_arr, dy);
+                                        _mm256_store_ps(dz_arr, dz);
+                                        _mm256_store_ps(dist2_arr, dist2);
+                                        _mm256_store_ps(minDist_arr, minDist);
 
                                         for (size_t k = 0; k < vec_len; ++k)
                                         {
@@ -292,32 +293,32 @@ void *SimulationMain(void *running)
                                                         double ny = dy_arr[k] / dist;
                                                         double nz = dz_arr[k] / dist;
 
-                                                        double rvx = Bodies.VX[j + k] - Bodies.VX[i];
-                                                        double rvy = Bodies.VY[j + k] - Bodies.VY[i];
-                                                        double rvz = Bodies.VZ[j + k] - Bodies.VZ[i];
+                                                        double rvx = Bodies->VX[j + k] - Bodies->VX[i];
+                                                        double rvy = Bodies->VY[j + k] - Bodies->VY[i];
+                                                        double rvz = Bodies->VZ[j + k] - Bodies->VZ[i];
 
                                                         double vAlongNormal = rvx * nx + rvy * ny + rvz * nz;
                                                         if (vAlongNormal < 0)
                                                         {
-                                                                double m1 = Bodies.M[i];
-                                                                double m2 = Bodies.M[j + k];
+                                                                double m1 = Bodies->M[i];
+                                                                double m2 = Bodies->M[j + k];
                                                                 double e = 0.9;
                                                                 double impulse = (1 + e) * vAlongNormal / (m1 + m2);
-                                                                Bodies.VX[i] += impulse * m2 * nx;
-                                                                Bodies.VY[i] += impulse * m2 * ny;
-                                                                Bodies.VZ[i] += impulse * m2 * nz;
-                                                                Bodies.VX[j + k] -= impulse * m1 * nx;
-                                                                Bodies.VY[j + k] -= impulse * m1 * ny;
-                                                                Bodies.VZ[j + k] -= impulse * m1 * nz;
+                                                                Bodies->VX[i] += impulse * m2 * nx;
+                                                                Bodies->VY[i] += impulse * m2 * ny;
+                                                                Bodies->VZ[i] += impulse * m2 * nz;
+                                                                Bodies->VX[j + k] -= impulse * m1 * nx;
+                                                                Bodies->VY[j + k] -= impulse * m1 * ny;
+                                                                Bodies->VZ[j + k] -= impulse * m1 * nz;
                                                         }
 
                                                         double overlap = minDist_arr[k] - dist;
-                                                        Bodies.X[i] -= nx * (overlap * Bodies.M[j + k] / (Bodies.M[i] + Bodies.M[j + k]));
-                                                        Bodies.Y[i] -= ny * (overlap * Bodies.M[j + k] / (Bodies.M[i] + Bodies.M[j + k]));
-                                                        Bodies.Z[i] -= nz * (overlap * Bodies.M[j + k] / (Bodies.M[i] + Bodies.M[j + k]));
-                                                        Bodies.X[j + k] += nx * (overlap * Bodies.M[i] / (Bodies.M[i] + Bodies.M[j + k]));
-                                                        Bodies.Y[j + k] += ny * (overlap * Bodies.M[i] / (Bodies.M[i] + Bodies.M[j + k]));
-                                                        Bodies.Z[j + k] += nz * (overlap * Bodies.M[i] / (Bodies.M[i] + Bodies.M[j + k]));
+                                                        Bodies->X[i] -= nx * (overlap * Bodies->M[j + k] / (Bodies->M[i] + Bodies->M[j + k]));
+                                                        Bodies->Y[i] -= ny * (overlap * Bodies->M[j + k] / (Bodies->M[i] + Bodies->M[j + k]));
+                                                        Bodies->Z[i] -= nz * (overlap * Bodies->M[j + k] / (Bodies->M[i] + Bodies->M[j + k]));
+                                                        Bodies->X[j + k] += nx * (overlap * Bodies->M[i] / (Bodies->M[i] + Bodies->M[j + k]));
+                                                        Bodies->Y[j + k] += ny * (overlap * Bodies->M[i] / (Bodies->M[i] + Bodies->M[j + k]));
+                                                        Bodies->Z[j + k] += nz * (overlap * Bodies->M[i] / (Bodies->M[i] + Bodies->M[j + k]));
                                                 }
                                         }
                                 }
@@ -330,9 +331,9 @@ void *SimulationMain(void *running)
 #pragma omp parallel for
                         for (size_t i = 0; i < N; ++i)
                         {
-                                snap[w][i].x = Bodies.X[i];
-                                snap[w][i].y = Bodies.Y[i];
-                                snap[w][i].z = Bodies.Z[i];
+                                snap[w][i].x = Bodies->X[i];
+                                snap[w][i].y = Bodies->Y[i];
+                                snap[w][i].z = Bodies->Z[i];
                         }
                         atomic_store(&snap_idx, w);
                         timer = 1;
@@ -340,6 +341,8 @@ void *SimulationMain(void *running)
 
                 Running = atomic_load(pRunning);
         }
+
+        free(Bodies);
 }
 
 int main(int argc, char **argv)
