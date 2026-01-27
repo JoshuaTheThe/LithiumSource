@@ -7,7 +7,7 @@
 #include <immintrin.h>
 #include <omp.h>
 
-#define N (10000)
+#define N (1000)
 
 const double G = (6.6743e-1);
 const double SIM_DT = 10.0;
@@ -102,7 +102,13 @@ void *SimulationMain(void *running)
                                                                                  _mm256_mul_pd(dy, dy)),
                                                                    _mm256_add_pd(_mm256_mul_pd(dz, dz), eps2));
 
-                                        __m256d invDist = _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_sqrt_pd(d2));
+                                        __m256d invDist = _mm256_cvtps_pd(
+                                            _mm_rsqrt_ps(_mm256_cvtpd_ps(d2)));
+                                        invDist = _mm256_mul_pd(invDist,
+                                                                _mm256_sub_pd(_mm256_set1_pd(1.5),
+                                                                              _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(0.5), d2),
+                                                                                            _mm256_mul_pd(invDist, invDist))));
+
                                         __m256d F = _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(G), mi),
                                                                   _mm256_mul_pd(mj, _mm256_mul_pd(invDist, invDist)));
 
@@ -178,7 +184,12 @@ void *SimulationMain(void *running)
                                                                                  _mm256_mul_pd(dy, dy)),
                                                                    _mm256_add_pd(_mm256_mul_pd(dz, dz), eps2));
 
-                                        __m256d invDist = _mm256_div_pd(_mm256_set1_pd(1.0), _mm256_sqrt_pd(d2));
+                                        __m256d invDist = _mm256_cvtps_pd(
+                                            _mm_rsqrt_ps(_mm256_cvtpd_ps(d2)));
+                                        invDist = _mm256_mul_pd(invDist,
+                                                                _mm256_sub_pd(_mm256_set1_pd(1.5),
+                                                                              _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(0.5), d2),
+                                                                                            _mm256_mul_pd(invDist, invDist))));
                                         __m256d F = _mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(G), mi),
                                                                   _mm256_mul_pd(mj, _mm256_mul_pd(invDist, invDist)));
 
