@@ -7,10 +7,10 @@
 #include <immintrin.h>
 #include <omp.h>
 
-#define N (1000)
+#define N (10000)
 
 const double G = (6.6743e-11);
-const double SIM_DT = 1.0;
+const double SIM_DT = 10.0;
 
 typedef struct
 {
@@ -34,7 +34,7 @@ void *SimulationMain(void *running)
         bool *pRunning = running;
         BodiesSoA Bodies;
 
-        const double CENTRAL_MASS = 1e16;
+        const double CENTRAL_MASS = 1e10;
 
         Bodies.X[0] = Bodies.Y[0] = Bodies.Z[0] = 0;
         Bodies.VX[0] = Bodies.VY[0] = Bodies.VZ[0] = 0;
@@ -296,19 +296,32 @@ int main(int argc, char **argv)
         Scene->SoundSys.PrimaryStepSounds[1] = LoadSound(Scene, "assets/walk_1.wav");
         Scene->SoundSys.PrimaryStepSounds[2] = LoadSound(Scene, "assets/walk_2.wav");
         Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/walk_3.wav");
-        Scene->Player.Position.Z = -1000000;
+        Scene->Player.Position.Z = -(1e6 + 2.5e5);
         Scene->Player.RunSpeed *= 10000;
         Scene->Player.WalkSpeed *= 1000;
 
-        for (size_t i = 0; i < N; ++i)
+        ENTITY *K = LiObj(Scene, LithiumLoadObject(Scene, "assets/tri.obj"));
+        ENTITY *Star = LiObj(Scene, LithiumLoadObject(Scene, "assets/tri.obj"));
+        
+        for (size_t i = 0; i < K->TriCount; ++i)
         {
-                LithiumLoadObject(Scene, "assets/tri.obj");
+                K->Tris[i].col.r = 128;
+                K->Tris[i].col.g = 128;
+                K->Tris[i].col.b = 128;
+                K->Tris[i].col.a = 255;
+        }
+
+        for (size_t i = 0; i < N-1; ++i)
+        {
+                ENTITY *E = InitMesh(Scene, 0);
+                *E = *K;
+                da_append(Scene, E);
         }
 
         pthread_t thread;
         pthread_create(&thread, NULL, SimulationMain, &Scene->Running);
 
-        ScaleMesh(Scene->items[0], 1000);
+        ScaleMesh(Scene->items[1], 1000);
 
         int prv = atomic_load(&snap_idx);
         while (Scene->Running)
@@ -319,9 +332,9 @@ int main(int argc, char **argv)
 #pragma omp parallel for
                         for (size_t i = 0; i < N; ++i)
                         {
-                                Scene->items[i]->Origin.X = snap[r][i].x;
-                                Scene->items[i]->Origin.Y = snap[r][i].y;
-                                Scene->items[i]->Origin.Z = snap[r][i].z;
+                                Scene->items[i+1]->Origin.X = snap[r][i].x;
+                                Scene->items[i+1]->Origin.Y = snap[r][i].y;
+                                Scene->items[i+1]->Origin.Z = snap[r][i].z;
                         }
                 }
 
@@ -329,6 +342,13 @@ int main(int argc, char **argv)
                 LithiumUpdate(Scene);
                 DrawScene(Scene);
                 prv = r;
+        }
+
+        for (size_t i = 0; i < N; ++i)
+        {
+                ENTITY *E = Scene->items[i+1];
+                E->TriCount = 0;
+                E->Tris = NULL;
         }
 
         pthread_join(thread, NULL);
