@@ -262,12 +262,10 @@ void *SimulationMain(void *running)
                                 __m256d minDist = _mm256_add_pd(ri, rj);
                                 __m256d minDist2 = _mm256_mul_pd(minDist, minDist);
 
-                                // Mask for collisions
                                 __m256d mask = _mm256_cmp_pd(dist2, minDist2, _CMP_LT_OS);
 
                                 if (_mm256_movemask_pd(mask) != 0)
                                 {
-                                        // Convert to scalar for handling exact overlaps
                                         double dx_arr[4], dy_arr[4], dz_arr[4];
                                         double dist2_arr[4], minDist_arr[4];
                                         _mm256_storeu_pd(dx_arr, dx);
