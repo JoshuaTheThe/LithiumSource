@@ -9,8 +9,8 @@
 
 #define N (1000)
 
-const double G = (6.6743e-1);
-const double SIM_DT = 10.0;
+const double G = (6.6743e-4);
+const double SIM_DT = 1.0;
 
 typedef struct
 {
@@ -45,7 +45,7 @@ void *SimulationMain(void *running)
         {
                 double r = 1.5e5 + ((double)rand() / RAND_MAX) * 1e6;
                 double theta = ((double)rand() / RAND_MAX) * 2.0 * M_PI;
-                double y_offset = (((double)rand() / RAND_MAX) - 0.5) * 5000;
+                double y_offset = (((double)rand() / RAND_MAX) - 0.5) * 5;
 
                 Bodies->X[i] = r * cos(theta);
                 Bodies->Y[i] = y_offset;
@@ -54,11 +54,11 @@ void *SimulationMain(void *running)
                 double speed = sqrt(G * CENTRAL_MASS / r);
 
                 Bodies->VX[i] = -speed * sin(theta);
-                Bodies->VY[i] = ((double)rand() / RAND_MAX - 0.5) * 50.0;
+                Bodies->VY[i] = 0;//((double)rand() / RAND_MAX - 0.5) * 50.0;
                 Bodies->VZ[i] = speed * cos(theta);
 
-                Bodies->R[i] = 0.9;
-                Bodies->M[i] = 100.0;
+                Bodies->R[i] = 2;
+                Bodies->M[i] = 1000.0;
         }
 
         __attribute__((aligned(32))) double ax[N] = {0}, ay[N] = {0}, az[N] = {0};
@@ -379,7 +379,8 @@ int main(int argc, char **argv)
         pthread_t thread;
         pthread_create(&thread, NULL, SimulationMain, &Scene->Running);
 
-        ScaleMesh(Scene->items[1], 1000);
+        ScaleMesh(Scene->items[1], 20000);
+        ScaleMesh(Scene->items[0], 2000);
 
         int prv = atomic_load(&snap_idx);
         while (Scene->Running)
