@@ -36,29 +36,36 @@ void *SimulationMain(void *running)
 
         const double CENTRAL_MASS = 1e10;
 
-        Bodies->X[0] = Bodies->Y[0] = Bodies->Z[0] = 0;
-        Bodies->VX[0] = Bodies->VY[0] = Bodies->VZ[0] = 0;
-        Bodies->R[0] = 1000;
-        Bodies->M[0] = CENTRAL_MASS;
+        // Bodies->X[0] = Bodies->Y[0] = Bodies->Z[0] = 0;
+        // Bodies->VX[0] = Bodies->VY[0] = Bodies->VZ[0] = 0;
+        // Bodies->R[0] = 1000;
+        // Bodies->M[0] = CENTRAL_MASS;
+        // for (size_t i = 1; i < N; ++i)
+        // {
+        //         double r = 1.5e5 + ((double)rand() / RAND_MAX) * 1e6;
+        //         double theta = ((double)rand() / RAND_MAX) * 2.0 * M_PI;
+        //         double y_offset = (((double)rand() / RAND_MAX) - 0.5) * 5;
+        //         Bodies->X[i] = r * cos(theta);
+        //         Bodies->Y[i] = y_offset;
+        //         Bodies->Z[i] = r * sin(theta);
+        //         double speed = sqrt(G * CENTRAL_MASS / r);
+        //         Bodies->VX[i] = -speed * sin(theta);
+        //         Bodies->VY[i] = 0;//((double)rand() / RAND_MAX - 0.5) * 50.0;
+        //         Bodies->VZ[i] = speed * cos(theta);
+        //         Bodies->R[i] = 2;
+        //         Bodies->M[i] = 1000.0;
+        // }
 
-        for (size_t i = 1; i < N; ++i)
+        for (size_t i = 0; i < N; ++i)
         {
-                double r = 1.5e5 + ((double)rand() / RAND_MAX) * 1e6;
-                double theta = ((double)rand() / RAND_MAX) * 2.0 * M_PI;
-                double y_offset = (((double)rand() / RAND_MAX) - 0.5) * 5;
-
-                Bodies->X[i] = r * cos(theta);
-                Bodies->Y[i] = y_offset;
-                Bodies->Z[i] = r * sin(theta);
-
-                double speed = sqrt(G * CENTRAL_MASS / r);
-
-                Bodies->VX[i] = -speed * sin(theta);
-                Bodies->VY[i] = 0;//((double)rand() / RAND_MAX - 0.5) * 50.0;
-                Bodies->VZ[i] = speed * cos(theta);
-
+                Bodies->X[i] = rand() % 100;
+                Bodies->Y[i] = rand() % 100;
+                Bodies->Z[i] = rand() % 100;
+                Bodies->VX[i] = 0;
+                Bodies->VY[i] = 0;
+                Bodies->VZ[i] = 0;
                 Bodies->R[i] = 2;
-                Bodies->M[i] = 1000.0;
+                Bodies->M[i] = 10.0;
         }
 
         __attribute__((aligned(32))) double ax[N] = {0}, ay[N] = {0}, az[N] = {0};
@@ -354,12 +361,12 @@ int main(int argc, char **argv)
         Scene->SoundSys.PrimaryStepSounds[1] = LoadSound(Scene, "assets/walk_1.wav");
         Scene->SoundSys.PrimaryStepSounds[2] = LoadSound(Scene, "assets/walk_2.wav");
         Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/walk_3.wav");
-        Scene->Player.Position.Z = -(1e6 + 2.5e5);
-        Scene->Player.RunSpeed *= 10000;
-        Scene->Player.WalkSpeed *= 1000;
+        Scene->Player.Position.Z = 0;//-(1e6 + 2.5e5);
+        Scene->Player.RunSpeed *=  10; //10000;
+        Scene->Player.WalkSpeed *= 10; // 1000;
 
         ENTITY *K = LiObj(Scene, LithiumLoadObject(Scene, "assets/tri.obj"));
-        ENTITY *Star = LiObj(Scene, LithiumLoadObject(Scene, "assets/tri.obj"));
+        // ENTITY *Star = LiObj(Scene, LithiumLoadObject(Scene, "assets/tri.obj"));
 
         for (size_t i = 0; i < K->TriCount; ++i)
         {
@@ -369,7 +376,7 @@ int main(int argc, char **argv)
                 K->Tris[i].col.a = 255;
         }
 
-        for (size_t i = 0; i < N - 1; ++i)
+        for (size_t i = 0; i < N; ++i)
         {
                 ENTITY *E = InitMesh(Scene, 0);
                 *E = *K;
@@ -379,8 +386,8 @@ int main(int argc, char **argv)
         pthread_t thread;
         pthread_create(&thread, NULL, SimulationMain, &Scene->Running);
 
-        ScaleMesh(Scene->items[1], 20000);
-        ScaleMesh(Scene->items[0], 2000);
+        // ScaleMesh(Scene->items[1], 20000);
+        ScaleMesh(Scene->items[0], 2);
 
         int prv = atomic_load(&snap_idx);
         while (Scene->Running)
