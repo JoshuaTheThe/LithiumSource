@@ -104,8 +104,8 @@ void *SimulationMain(void *running)
 
                                         __m256 invDist = _mm256_rsqrt_ps(d2);
                                         invDist = _mm256_mul_ps(invDist,
-                                                                _mm256_sub_ps(_mm256_set1_ps(1.5),
-                                                                              _mm256_mul_ps(_mm256_mul_ps(_mm256_set1_ps(0.5), d2),
+                                                                _mm256_sub_ps(_mm256_set1_ps(1.5f),
+                                                                              _mm256_mul_ps(_mm256_mul_ps(_mm256_set1_ps(0.5f), d2),
                                                                                             _mm256_mul_ps(invDist, invDist))));
 
                                         __m256 F = _mm256_mul_ps(_mm256_mul_ps(_mm256_set1_ps(G), mi),
@@ -185,8 +185,8 @@ void *SimulationMain(void *running)
 
                                         __m256 invDist = _mm256_rsqrt_ps(d2);
                                         invDist = _mm256_mul_ps(invDist,
-                                                                _mm256_sub_ps(_mm256_set1_ps(1.5),
-                                                                              _mm256_mul_ps(_mm256_mul_ps(_mm256_set1_ps(0.5), d2),
+                                                                _mm256_sub_ps(_mm256_set1_ps(1.5f),
+                                                                              _mm256_mul_ps(_mm256_mul_ps(_mm256_set1_ps(0.5f), d2),
                                                                                             _mm256_mul_ps(invDist, invDist))));
                                         __m256 F = _mm256_mul_ps(_mm256_mul_ps(_mm256_set1_ps(G), mi),
                                                                  _mm256_mul_ps(mj, _mm256_mul_ps(invDist, invDist)));
