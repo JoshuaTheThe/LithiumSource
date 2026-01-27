@@ -9,7 +9,7 @@
 
 #define N (10000)
 
-const double G = (6.6743e-11);
+const double G = (6.6743e-1);
 const double SIM_DT = 10.0;
 
 typedef struct
@@ -45,7 +45,7 @@ void *SimulationMain(void *running)
         {
                 double r = 1.5e5 + ((double)rand() / RAND_MAX) * 1e6;
                 double theta = ((double)rand() / RAND_MAX) * 2.0 * M_PI;
-                double y_offset = (((double)rand() / RAND_MAX) - 25) * 50;
+                double y_offset = (((double)rand() / RAND_MAX) - 0.5) * 5000;
 
                 Bodies.X[i] = r * cos(theta);
                 Bodies.Y[i] = y_offset;
@@ -54,7 +54,7 @@ void *SimulationMain(void *running)
                 double speed = sqrt(G * CENTRAL_MASS / r);
 
                 Bodies.VX[i] = -speed * sin(theta);
-                Bodies.VY[i] = 0;
+                Bodies.VY[i] = ((double)rand() / RAND_MAX - 0.5) * 50.0;
                 Bodies.VZ[i] = speed * cos(theta);
 
                 Bodies.R[i] = 0.9;
@@ -128,7 +128,7 @@ void *SimulationMain(void *running)
                                 }
                         }
 
-#pragma omp critical
+#pragma omp parallel
                         for (size_t i = 0; i < N; ++i)
                         {
                                 ax[i] += ax_private[i];
