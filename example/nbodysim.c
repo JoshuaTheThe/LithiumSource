@@ -83,8 +83,8 @@ void *SimulationMain(void *running)
 
                                 for (size_t j = i + 1; j < N; j += 4)
                                 {
-                                        size_t rem = N - j;
-                                        size_t vec_len = rem >= 4 ? 4 : rem;
+                                        const size_t rem = N - j;
+                                        const size_t vec_len = rem >= 4 ? 4 : rem;
 
                                         __m256d xj = _mm256_loadu_pd(&Bodies.X[j]);
                                         __m256d yj = _mm256_loadu_pd(&Bodies.Y[j]);
@@ -228,43 +228,91 @@ void *SimulationMain(void *running)
 #pragma omp parallel for schedule(dynamic)
                 for (size_t i = 0; i < N; ++i)
                 {
-                        for (size_t j = i + 1; j < N; ++j)
+                        __m256d xi = _mm256_set1_pd(Bodies.X[i]);
+                        __m256d yi = _mm256_set1_pd(Bodies.Y[i]);
+                        __m256d zi = _mm256_set1_pd(Bodies.Z[i]);
+                        __m256d vxi = _mm256_set1_pd(Bodies.VX[i]);
+                        __m256d vyi = _mm256_set1_pd(Bodies.VY[i]);
+                        __m256d vzi = _mm256_set1_pd(Bodies.VZ[i]);
+                        __m256d mi = _mm256_set1_pd(Bodies.M[i]);
+                        __m256d ri = _mm256_set1_pd(Bodies.R[i]);
+
+                        for (size_t j = i + 1; j < N; j += 4)
                         {
-                                const double dx = Bodies.X[j] - Bodies.X[i];
-                                const double dy = Bodies.Y[j] - Bodies.Y[i];
-                                const double dz = Bodies.Z[j] - Bodies.Z[i];
-                                const double dist2 = dx * dx + dy * dy + dz * dz;
-                                const double minDist = Bodies.R[i] + Bodies.R[j];
-                                if (dist2 < minDist * minDist)
+                                size_t rem = N - j;
+                                size_t vec_len = rem >= 4 ? 4 : rem;
+
+                                __m256d xj = _mm256_loadu_pd(&Bodies.X[j]);
+                                __m256d yj = _mm256_loadu_pd(&Bodies.Y[j]);
+                                __m256d zj = _mm256_loadu_pd(&Bodies.Z[j]);
+                                __m256d vxj = _mm256_loadu_pd(&Bodies.VX[j]);
+                                __m256d vyj = _mm256_loadu_pd(&Bodies.VY[j]);
+                                __m256d vzj = _mm256_loadu_pd(&Bodies.VZ[j]);
+                                __m256d mj = _mm256_loadu_pd(&Bodies.M[j]);
+                                __m256d rj = _mm256_loadu_pd(&Bodies.R[j]);
+
+                                __m256d dx = _mm256_sub_pd(xj, xi);
+                                __m256d dy = _mm256_sub_pd(yj, yi);
+                                __m256d dz = _mm256_sub_pd(zj, zi);
+
+                                __m256d dist2 = _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(dx, dx),
+                                                                            _mm256_mul_pd(dy, dy)),
+                                                              _mm256_mul_pd(dz, dz));
+
+                                __m256d minDist = _mm256_add_pd(ri, rj);
+                                __m256d minDist2 = _mm256_mul_pd(minDist, minDist);
+
+                                // Mask for collisions
+                                __m256d mask = _mm256_cmp_pd(dist2, minDist2, _CMP_LT_OS);
+
+                                if (_mm256_movemask_pd(mask) != 0)
                                 {
-                                        const double dist = sqrt(dist2);
-                                        const double nx = dx / dist;
-                                        const double ny = dy / dist;
-                                        const double nz = dz / dist;
-                                        const double rvx = Bodies.VX[j] - Bodies.VX[i];
-                                        const double rvy = Bodies.VY[j] - Bodies.VY[i];
-                                        const double rvz = Bodies.VZ[j] - Bodies.VZ[i];
-                                        const double vAlongNormal = rvx * nx + rvy * ny + rvz * nz;
-                                        if (vAlongNormal < 0)
+                                        // Convert to scalar for handling exact overlaps
+                                        double dx_arr[4], dy_arr[4], dz_arr[4];
+                                        double dist2_arr[4], minDist_arr[4];
+                                        _mm256_storeu_pd(dx_arr, dx);
+                                        _mm256_storeu_pd(dy_arr, dy);
+                                        _mm256_storeu_pd(dz_arr, dz);
+                                        _mm256_storeu_pd(dist2_arr, dist2);
+                                        _mm256_storeu_pd(minDist_arr, minDist);
+
+                                        for (size_t k = 0; k < vec_len; ++k)
                                         {
-                                                const double m1 = Bodies.M[i];
-                                                const double m2 = Bodies.M[j];
-                                                const double e = 0.9;
-                                                const double impulse = (1 + e) * vAlongNormal / (m1 + m2);
-                                                Bodies.VX[i] += impulse * m2 * nx;
-                                                Bodies.VY[i] += impulse * m2 * ny;
-                                                Bodies.VZ[i] += impulse * m2 * nz;
-                                                Bodies.VX[j] -= impulse * m1 * nx;
-                                                Bodies.VY[j] -= impulse * m1 * ny;
-                                                Bodies.VZ[j] -= impulse * m1 * nz;
+                                                if (dist2_arr[k] < minDist_arr[k] * minDist_arr[k])
+                                                {
+                                                        double dist = sqrt(dist2_arr[k]);
+                                                        double nx = dx_arr[k] / dist;
+                                                        double ny = dy_arr[k] / dist;
+                                                        double nz = dz_arr[k] / dist;
+
+                                                        double rvx = Bodies.VX[j + k] - Bodies.VX[i];
+                                                        double rvy = Bodies.VY[j + k] - Bodies.VY[i];
+                                                        double rvz = Bodies.VZ[j + k] - Bodies.VZ[i];
+
+                                                        double vAlongNormal = rvx * nx + rvy * ny + rvz * nz;
+                                                        if (vAlongNormal < 0)
+                                                        {
+                                                                double m1 = Bodies.M[i];
+                                                                double m2 = Bodies.M[j + k];
+                                                                double e = 0.9;
+                                                                double impulse = (1 + e) * vAlongNormal / (m1 + m2);
+                                                                Bodies.VX[i] += impulse * m2 * nx;
+                                                                Bodies.VY[i] += impulse * m2 * ny;
+                                                                Bodies.VZ[i] += impulse * m2 * nz;
+                                                                Bodies.VX[j + k] -= impulse * m1 * nx;
+                                                                Bodies.VY[j + k] -= impulse * m1 * ny;
+                                                                Bodies.VZ[j + k] -= impulse * m1 * nz;
+                                                        }
+
+                                                        double overlap = minDist_arr[k] - dist;
+                                                        Bodies.X[i] -= nx * (overlap * Bodies.M[j + k] / (Bodies.M[i] + Bodies.M[j + k]));
+                                                        Bodies.Y[i] -= ny * (overlap * Bodies.M[j + k] / (Bodies.M[i] + Bodies.M[j + k]));
+                                                        Bodies.Z[i] -= nz * (overlap * Bodies.M[j + k] / (Bodies.M[i] + Bodies.M[j + k]));
+                                                        Bodies.X[j + k] += nx * (overlap * Bodies.M[i] / (Bodies.M[i] + Bodies.M[j + k]));
+                                                        Bodies.Y[j + k] += ny * (overlap * Bodies.M[i] / (Bodies.M[i] + Bodies.M[j + k]));
+                                                        Bodies.Z[j + k] += nz * (overlap * Bodies.M[i] / (Bodies.M[i] + Bodies.M[j + k]));
+                                                }
                                         }
-                                        const double overlap = minDist - dist;
-                                        Bodies.X[i] -= nx * (overlap * Bodies.M[j] / (Bodies.M[i] + Bodies.M[j]));
-                                        Bodies.Y[i] -= ny * (overlap * Bodies.M[j] / (Bodies.M[i] + Bodies.M[j]));
-                                        Bodies.Z[i] -= nz * (overlap * Bodies.M[j] / (Bodies.M[i] + Bodies.M[j]));
-                                        Bodies.X[j] += nx * (overlap * Bodies.M[i] / (Bodies.M[i] + Bodies.M[j]));
-                                        Bodies.Y[j] += ny * (overlap * Bodies.M[i] / (Bodies.M[i] + Bodies.M[j]));
-                                        Bodies.Z[j] += nz * (overlap * Bodies.M[i] / (Bodies.M[i] + Bodies.M[j]));
                                 }
                         }
                 }
@@ -302,7 +350,7 @@ int main(int argc, char **argv)
 
         ENTITY *K = LiObj(Scene, LithiumLoadObject(Scene, "assets/tri.obj"));
         ENTITY *Star = LiObj(Scene, LithiumLoadObject(Scene, "assets/tri.obj"));
-        
+
         for (size_t i = 0; i < K->TriCount; ++i)
         {
                 K->Tris[i].col.r = 128;
@@ -311,7 +359,7 @@ int main(int argc, char **argv)
                 K->Tris[i].col.a = 255;
         }
 
-        for (size_t i = 0; i < N-1; ++i)
+        for (size_t i = 0; i < N - 1; ++i)
         {
                 ENTITY *E = InitMesh(Scene, 0);
                 *E = *K;
@@ -332,9 +380,9 @@ int main(int argc, char **argv)
 #pragma omp parallel for
                         for (size_t i = 0; i < N; ++i)
                         {
-                                Scene->items[i+1]->Origin.X = snap[r][i].x;
-                                Scene->items[i+1]->Origin.Y = snap[r][i].y;
-                                Scene->items[i+1]->Origin.Z = snap[r][i].z;
+                                Scene->items[i + 1]->Origin.X = snap[r][i].x;
+                                Scene->items[i + 1]->Origin.Y = snap[r][i].y;
+                                Scene->items[i + 1]->Origin.Z = snap[r][i].z;
                         }
                 }
 
@@ -346,7 +394,7 @@ int main(int argc, char **argv)
 
         for (size_t i = 0; i < N; ++i)
         {
-                ENTITY *E = Scene->items[i+1];
+                ENTITY *E = Scene->items[i + 1];
                 E->TriCount = 0;
                 E->Tris = NULL;
         }
