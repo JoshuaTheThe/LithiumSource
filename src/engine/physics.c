@@ -156,6 +156,7 @@ static bool ResolveEntityCollision(SCENE *Scene, ENTITY *A, ENTITY *B)
 
         return collision;
 }
+
 static bool ResolveCollision(SCENE *Scene, ENTITY *Mesh)
 {
         if (!Mesh->IsCollidable)
