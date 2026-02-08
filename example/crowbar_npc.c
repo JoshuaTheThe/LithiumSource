@@ -4,7 +4,7 @@ void Trigger(ENTITY *Self, SCENE *Scene, VEC3 Overlap)
 {
         if (Self->static_data[0] == false)
         {
-                Self->static_data[1] = LoadSound(Scene, "assets/ahfreeman.wav");
+                Self->static_data[1] = LoadSound(Scene, "assets/valve/ahfreeman.wav");
                 PlaySound(Scene, Self->static_data[1]);
                 printf("INFO: Triggered %p in %p with an overlap of (%f, %f, %f)\n", Self, Scene, Overlap.X, Overlap.Y, Overlap.Z);
         }
@@ -15,8 +15,8 @@ void CrowBarHit(TOOL *Self, ENTITY *Hit, SCENE *Scene, double Distance)
 {
         if (Self->Entity->static_data[3] == -1)
         {
-                Self->Entity->static_data[0] = LoadSound(Scene, "assets/cbar_hit1.wav");
-                Self->Entity->static_data[1] = LoadSound(Scene, "assets/cbar_hit2.wav");
+                Self->Entity->static_data[0] = LoadSound(Scene, "assets/valve/cbar_hit1.wav");
+                Self->Entity->static_data[1] = LoadSound(Scene, "assets/valve/cbar_hit2.wav");
                 Self->Entity->static_data[2] = 0;
                 Self->Entity->static_data[3] = 0;
                 *((float *)&Self->Entity->static_data[4]) = 0.0;
@@ -44,17 +44,17 @@ void CrowBarEnd(TOOL *Self) {}
 int main(int Count, char **Arguments)
 {
         SCENE *Scene = LithiumInit(Count, Arguments);
-        Scene->SoundSys.PrimaryJumpSound = LoadSound(Scene, "assets/jump.wav");
-        Scene->SoundSys.DenySelectSound = LoadSound(Scene, "assets/denyselect.wav");
-        Scene->SoundSys.PrimaryStepSounds[0] = LoadSound(Scene, "assets/walk_0.wav");
-        Scene->SoundSys.PrimaryStepSounds[1] = LoadSound(Scene, "assets/walk_1.wav");
-        Scene->SoundSys.PrimaryStepSounds[2] = LoadSound(Scene, "assets/walk_2.wav");
-        Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/walk_3.wav");
+        Scene->SoundSys.PrimaryJumpSound = LoadSound(Scene, "assets/valve/jump.wav");
+        Scene->SoundSys.DenySelectSound = LoadSound(Scene, "assets/valve/denyselect.wav");
+        Scene->SoundSys.PrimaryStepSounds[0] = LoadSound(Scene, "assets/valve/step1.wav");
+        Scene->SoundSys.PrimaryStepSounds[1] = LoadSound(Scene, "assets/valve/step2.wav");
+        Scene->SoundSys.PrimaryStepSounds[2] = LoadSound(Scene, "assets/valve/step3.wav");
+        Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/valve/step4.wav");
 
-        size_t obj0 = LithiumLoadObject(Scene, "assets/map.obj");
-        size_t obj1 = LithiumCreateNPC(Scene, "assets/scientist.obj");
+        size_t obj0 = LithiumLoadObject(Scene, "assets/plane.obj");
+        size_t obj1 = LithiumCreateNPC(Scene, "assets/valve/scientist.obj");
         size_t obj2 = LithiumLoadObject(Scene, "assets/cube.obj"); /* Our Trigger Object */
-        size_t obj3 = LithiumLoadObject(Scene, "assets/crowbar.obj");
+        size_t obj3 = LithiumLoadObject(Scene, "assets/valve/crowbar.obj");
         LiObj(Scene, obj1)->static_data[NPC_STATIC_TRIGGER] = obj2;
         LiObj(Scene, obj2)->IsInteractable = false;
         LiObj(Scene, obj2)->IsVisible = false;
@@ -68,7 +68,7 @@ int main(int Count, char **Arguments)
         LiObj(Scene, obj3)->static_data[3] = -1;
 
         TEXTURE *Texture = LoadTexture("assets/happy.bmp");
-        TEXTURE *Crowbar = LoadTexture("assets/crowbar.bmp");
+        TEXTURE *Crowbar = LoadTexture("assets/valve/crowbar.bmp");
         Texture->repeat = true;
         Texture->scalex = 10;
         Texture->scaley = 10;

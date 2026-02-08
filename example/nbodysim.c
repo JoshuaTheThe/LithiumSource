@@ -355,17 +355,17 @@ void *SimulationMain(void *running)
 int main(int argc, char **argv)
 {
         SCENE *Scene = LithiumInit(argc, argv);
-        Scene->SoundSys.PrimaryJumpSound = LoadSound(Scene, "assets/jump.wav");
-        Scene->SoundSys.DenySelectSound = LoadSound(Scene, "assets/denyselect.wav");
-        Scene->SoundSys.PrimaryStepSounds[0] = LoadSound(Scene, "assets/walk_0.wav");
-        Scene->SoundSys.PrimaryStepSounds[1] = LoadSound(Scene, "assets/walk_1.wav");
-        Scene->SoundSys.PrimaryStepSounds[2] = LoadSound(Scene, "assets/walk_2.wav");
-        Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/walk_3.wav");
-        Scene->Player.Position.Z = 0;//-(1e6 + 2.5e5);
-        Scene->Player.RunSpeed *=  10; //10000;
+        Scene->SoundSys.PrimaryJumpSound = LoadSound(Scene, "assets/valve/jump.wav");
+        Scene->SoundSys.DenySelectSound = LoadSound(Scene, "assets/valve/denyselect.wav");
+        Scene->SoundSys.PrimaryStepSounds[0] = LoadSound(Scene, "assets/valve/step1.wav");
+        Scene->SoundSys.PrimaryStepSounds[1] = LoadSound(Scene, "assets/valve/step2.wav");
+        Scene->SoundSys.PrimaryStepSounds[2] = LoadSound(Scene, "assets/valve/step3.wav");
+        Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/valve/step4.wav");
+        Scene->Player.Position.Z = 0;  //-(1e6 + 2.5e5);
+        Scene->Player.RunSpeed *= 10;  // 10000;
         Scene->Player.WalkSpeed *= 10; // 1000;
 
-        ENTITY *K = LiObj(Scene, LithiumLoadObject(Scene, "assets/tri.obj"));
+        ENTITY *K = LiObj(Scene, LithiumLoadObject(Scene, "assets/ico.obj"));
         // ENTITY *Star = LiObj(Scene, LithiumLoadObject(Scene, "assets/tri.obj"));
 
         for (size_t i = 0; i < K->TriCount; ++i)

@@ -19,6 +19,8 @@ size_t LoadSound(SCENE *Scene, const char *Path)
         if (!FullPath)
                 TODO();
         snprintf(FullPath, sz, "%s/%s", ProgramPath, Path);
+        printf(" [INFO] Loading from: %s\n", FullPath);
+        
         size_t idx = FindEmptySound(Scene);
         Scene->SoundSys.Sounds[idx].Sample = Mix_LoadWAV(FullPath);
         Scene->SoundSys.Sounds[idx].Valid = true;

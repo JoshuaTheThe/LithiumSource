@@ -3,7 +3,7 @@
  * instead of using chunks, i just used per block.
  * this is the first time in a while for me using pthreads
  * so it may not be the best.
- * 
+ *
  * Basically just an adapted version of terrain.c
  * i would reccomend only useing this while flying, as physics and lithium in general;
  * are not very well optimised.
@@ -283,12 +283,12 @@ void *TerrainThreadFunc(void *arg)
 int main(int Count, char **Arguments)
 {
         SCENE *Scene = LithiumInit(Count, Arguments);
-        Scene->SoundSys.PrimaryJumpSound = LoadSound(Scene, "assets/jump.wav");
-        Scene->SoundSys.DenySelectSound = LoadSound(Scene, "assets/denyselect.wav");
-        Scene->SoundSys.PrimaryStepSounds[0] = LoadSound(Scene, "assets/walk_0.wav");
-        Scene->SoundSys.PrimaryStepSounds[1] = LoadSound(Scene, "assets/walk_1.wav");
-        Scene->SoundSys.PrimaryStepSounds[2] = LoadSound(Scene, "assets/walk_2.wav");
-        Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/walk_3.wav");
+        Scene->SoundSys.PrimaryJumpSound = LoadSound(Scene, "assets/valve/jump.wav");
+        Scene->SoundSys.DenySelectSound = LoadSound(Scene, "assets/valve/denyselect.wav");
+        Scene->SoundSys.PrimaryStepSounds[0] = LoadSound(Scene, "assets/valve/step1.wav");
+        Scene->SoundSys.PrimaryStepSounds[1] = LoadSound(Scene, "assets/valve/step2.wav");
+        Scene->SoundSys.PrimaryStepSounds[2] = LoadSound(Scene, "assets/valve/step3.wav");
+        Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/valve/step4.wav");
 
         ENTITY *Back = InitMesh(Scene, 0);
         ENTITY *Object = InitMesh(Scene, 0);

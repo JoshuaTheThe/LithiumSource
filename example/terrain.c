@@ -86,21 +86,21 @@ double genHeight(double x, double z, int seed)
 int main(int Count, char **Arguments)
 {
         SCENE *Scene = LithiumInit(Count, Arguments);
-        Scene->SoundSys.PrimaryJumpSound = LoadSound(Scene, "assets/jump.wav");
-        Scene->SoundSys.DenySelectSound = LoadSound(Scene, "assets/denyselect.wav");
-        Scene->SoundSys.PrimaryStepSounds[0] = LoadSound(Scene, "assets/walk_0.wav");
-        Scene->SoundSys.PrimaryStepSounds[1] = LoadSound(Scene, "assets/walk_1.wav");
-        Scene->SoundSys.PrimaryStepSounds[2] = LoadSound(Scene, "assets/walk_2.wav");
-        Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/walk_3.wav");
+        Scene->SoundSys.PrimaryJumpSound = LoadSound(Scene, "assets/valve/jump.wav");
+        Scene->SoundSys.DenySelectSound = LoadSound(Scene, "assets/valve/denyselect.wav");
+        Scene->SoundSys.PrimaryStepSounds[0] = LoadSound(Scene, "assets/valve/step1.wav");
+        Scene->SoundSys.PrimaryStepSounds[1] = LoadSound(Scene, "assets/valve/step2.wav");
+        Scene->SoundSys.PrimaryStepSounds[2] = LoadSound(Scene, "assets/valve/step3.wav");
+        Scene->SoundSys.PrimaryStepSounds[3] = LoadSound(Scene, "assets/valve/step4.wav");
 
-        ENT Map = LithiumLoadObject(Scene, "assets/plane sub25.obj"); /* 25 subdivisions */
+        ENT Map = LithiumLoadObject(Scene, "assets/plane_32.obj"); /* 32 subdivisions */
         ENT Water = LithiumLoadObject(Scene, "assets/plane.obj");
         ScaleMesh(LiObj(Scene, Map), 50.0);
         ScaleMesh(LiObj(Scene, Water), 50.0);
         ENTITY *EMap = LiObj(Scene, Map);
         ENTITY *EWat = LiObj(Scene, Water);
 
-        ENTITY *Sci = LiObj(Scene, LithiumCreateNPC(Scene, "assets/scientist.obj"));
+        ENTITY *Sci = LiObj(Scene, LithiumCreateNPC(Scene, "assets/valve/scientist.obj"));
 
         EMap->IsStatic = true;
         EWat->IsStatic = true;

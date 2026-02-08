@@ -115,9 +115,9 @@ size_t LithiumCreateNPC(SCENE *Scene, char *Path)
         LiObj(Scene, obj)->PhysicsIteration = NPC_Physics;
         LiObj(Scene, obj)->Hurt = NPC_Hit;
         LiObj(Scene, obj)->Interact = NPC_Interact;
-        LiObj(Scene, obj)->static_data[NPC_STATIC_SCREAM_ID] = LoadSound(Scene, "assets/sci_pain3.wav");
-        LiObj(Scene, obj)->static_data[NPC_STATIC_FOLLOW_AGREE_ID] = LoadSound(Scene, "assets/yees.wav");
-        LiObj(Scene, obj)->static_data[NPC_STATIC_DEATH_ID] = LoadSound(Scene, "assets/whatyoudoing.wav");
+        LiObj(Scene, obj)->static_data[NPC_STATIC_SCREAM_ID] = LoadSound(Scene, "assets/valve/sci_pain3.wav");
+        LiObj(Scene, obj)->static_data[NPC_STATIC_FOLLOW_AGREE_ID] = LoadSound(Scene, "assets/valve/yees.wav");
+        LiObj(Scene, obj)->static_data[NPC_STATIC_DEATH_ID] = LoadSound(Scene, "assets/valve/whatyoudoing.wav");
         LiObj(Scene, obj)->static_data[NPC_STATIC_OLD_HEALTH] = LiObj(Scene, obj)->Health;
         LiObj(Scene, obj)->static_data[NPC_STATIC_STATE] = NPC_STATE_IDLE;
         LiObj(Scene, obj)->static_data[NPC_STATIC_TRIGGER] = -1;
